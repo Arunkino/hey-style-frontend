@@ -1,36 +1,160 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Smartphone, Star, Clock, Calendar, CheckCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { motion, useScroll, useTransform, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
+import { ArrowRight, Smartphone, Star, Clock, Calendar, CheckCircle, Loader2, Sparkles, Shield, Users, MapPin, ChevronDown, Play, Instagram, Twitter, Linkedin, Mail, Phone, Scissors, Heart } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+import CustomCursor from './components/CustomCursor';
+import MagneticButton from './components/MagneticButton';
+import AnimatedCounter from './components/AnimatedCounter';
+import TextReveal from './components/TextReveal';
+import ParallaxSection from './components/ParallaxSection';
+
+const FloatingMascot = React.lazy(() => import('./components/FloatingMascot'));
+
+gsap.registerPlugin(ScrollTrigger);
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1UTrUdEFVexDV6prtTEqo8N_c5B_HkvGXIuIiW8Bl4VrddHJC7lvmGKst0A-PU6Bz/exec";
 
-function Form() {
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        message: ''
-    });
-    const [status, setStatus] = useState('idle'); // idle, submitting, success, error
+// Smooth Scroll Setup
+function useSmoothScroll() {
+    useEffect(() => {
+        let lenis;
+        (async () => {
+            const Lenis = (await import('lenis')).default;
+            lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                smooth: true,
+            });
 
-    const handleChange = (e) => {
-        setFormData(prev => ({
-            ...prev,
-            [e.target.name]: e.target.value
-        }));
+            function raf(time) {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+            requestAnimationFrame(raf);
+        })();
+
+        return () => lenis?.destroy();
+    }, []);
+}
+
+// Scroll Progress Bar
+function ScrollProgress() {
+    const { scrollYProgress } = useScroll();
+    const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+
+    return (
+        <motion.div
+            className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary via-purple-400 to-secondary z-[100] origin-left"
+            style={{ scaleX }}
+        />
+    );
+}
+
+// Animated Section Wrapper
+function RevealSection({ children, className = '', delay = 0 }) {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: '-80px' });
+
+    return (
+        <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 60 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay, ease: [0.25, 0.1, 0.25, 1] }}
+            className={className}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+// Glassmorphism Card
+function GlassCard({ children, className = '', hover = true }) {
+    return (
+        <motion.div
+            whileHover={hover ? { y: -8, scale: 1.02 } : {}}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className={`glass-card ${className}`}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+// Tilt Card
+function TiltCard({ children, className = '' }) {
+    const cardRef = useRef(null);
+
+    const handleMouseMove = (e) => {
+        const card = cardRef.current;
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -8;
+        const rotateY = ((x - centerX) / centerX) * 8;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
     };
+
+    const handleMouseLeave = () => {
+        const card = cardRef.current;
+        if (card) card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1,1,1)';
+    };
+
+    return (
+        <div
+            ref={cardRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className={`tilt-card ${className}`}
+            style={{ transition: 'transform 0.15s ease-out' }}
+        >
+            {children}
+        </div>
+    );
+}
+
+// Marquee
+function Marquee({ items, direction = 'left', speed = 30 }) {
+    return (
+        <div className="overflow-hidden whitespace-nowrap py-4">
+            <motion.div
+                className="inline-flex gap-8"
+                animate={{ x: direction === 'left' ? ['0%', '-50%'] : ['-50%', '0%'] }}
+                transition={{ duration: speed, repeat: Infinity, ease: 'linear' }}
+            >
+                {[...items, ...items].map((item, i) => (
+                    <span key={i} className="text-zinc-600 text-lg font-medium flex items-center gap-2">
+                        <Sparkles size={14} className="text-primary/40" />
+                        {item}
+                    </span>
+                ))}
+            </motion.div>
+        </div>
+    );
+}
+
+// Form Component
+function Form() {
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
+    const [status, setStatus] = useState('idle');
+    const [focusedField, setFocusedField] = useState(null);
+
+    const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setStatus('submitting');
-
         try {
             await fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify(formData),
-                mode: "no-cors" // Essential for GAS to avoid CORS errors in browser
+                mode: "no-cors"
             });
-            // Since no-cors gives opaque response, we assume success if no network error
             setStatus('success');
             setFormData({ name: '', email: '', phone: '', message: '' });
         } catch (error) {
@@ -44,16 +168,23 @@ function Form() {
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-zinc-900 border border-green-500/20 rounded-2xl p-8 text-center"
+                className="glass-card p-10 text-center"
             >
-                <div className="flex justify-center mb-4">
-                    <CheckCircle className="text-green-500 w-16 h-16" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">Message Sent!</h3>
-                <p className="text-gray-400">Thanks for reaching out. We'll get back to you shortly.</p>
+                <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', delay: 0.2 }}
+                    className="flex justify-center mb-6"
+                >
+                    <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center">
+                        <CheckCircle className="text-green-400 w-10 h-10" />
+                    </div>
+                </motion.div>
+                <h3 className="text-2xl font-bold text-white mb-3">Message Sent!</h3>
+                <p className="text-gray-400 mb-6">Thanks for reaching out. We will get back to you shortly.</p>
                 <button
                     onClick={() => setStatus('idle')}
-                    className="mt-6 text-sm text-primary hover:text-white transition-colors"
+                    className="text-sm text-primary hover:text-white transition-colors underline underline-offset-4"
                 >
                     Send another message
                 </button>
@@ -61,60 +192,49 @@ function Form() {
         );
     }
 
+    const inputClass = (name) =>
+        `w-full p-4 bg-white/[0.03] border rounded-xl text-white outline-none transition-all duration-300 placeholder:text-zinc-600 ${focusedField === name ? 'border-primary/50 shadow-[0_0_20px_rgba(142,110,232,0.1)]' : 'border-white/[0.06] hover:border-white/10'}`;
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+            {[
+                { label: 'Your Name', name: 'name', type: 'text', placeholder: 'John Doe' },
+                { label: 'Email Address', name: 'email', type: 'email', placeholder: 'john@example.com' },
+                { label: 'Phone', name: 'phone', type: 'tel', placeholder: '+1 234 567 890' },
+            ].map((field) => (
+                <div key={field.name}>
+                    <label className="block mb-2 text-sm font-medium text-gray-400">{field.label}</label>
+                    <input
+                        type={field.type}
+                        name={field.name}
+                        value={formData[field.name]}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField(field.name)}
+                        onBlur={() => setFocusedField(null)}
+                        required
+                        className={inputClass(field.name)}
+                        placeholder={field.placeholder}
+                    />
+                </div>
+            ))}
             <div>
-                <label className="block mb-2 text-sm font-medium text-gray-300">Your Name</label>
-                <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-zinc-600"
-                    placeholder="John Doe"
-                />
-            </div>
-            <div>
-                <label className="block mb-2 text-sm font-medium text-gray-300">Email Address</label>
-                <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-zinc-600"
-                    placeholder="john@example.com"
-                />
-            </div>
-            <div>
-                <label className="block mb-2 text-sm font-medium text-gray-300">Phone</label>
-                <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                    className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-zinc-600"
-                    placeholder="+1 234 567 890"
-                />
-            </div>
-            <div>
-                <label className="block mb-2 text-sm font-medium text-gray-300">Message</label>
+                <label className="block mb-2 text-sm font-medium text-gray-400">Message</label>
                 <textarea
                     rows="4"
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
+                    onFocus={() => setFocusedField('message')}
+                    onBlur={() => setFocusedField(null)}
                     required
-                    className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-zinc-600"
+                    className={inputClass('message')}
                     placeholder="How can we help?"
-                ></textarea>
+                />
             </div>
-            <button
+            <MagneticButton
                 type="submit"
                 disabled={status === 'submitting'}
-                className="w-full text-black bg-primary hover:bg-primary/90 font-medium rounded-xl text-lg px-5 py-4 text-center transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full text-black bg-gradient-to-r from-primary to-purple-400 hover:shadow-[0_0_30px_rgba(142,110,232,0.3)] font-semibold rounded-xl text-lg px-5 py-4 text-center transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
                 {status === 'submitting' ? (
                     <>
@@ -122,128 +242,647 @@ function Form() {
                         Sending...
                     </>
                 ) : (
-                    'Send Enquiry'
+                    <>
+                        Send Enquiry
+                        <ArrowRight size={18} />
+                    </>
                 )}
-            </button>
-            {status === 'error' && (
-                <p className="text-red-500 text-sm text-center">Something went wrong. Please try again.</p>
-            )}
+            </MagneticButton>
+            <AnimatePresence>
+                {status === 'error' && (
+                    <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-red-400 text-sm text-center"
+                    >
+                        Something went wrong. Please try again.
+                    </motion.p>
+                )}
+            </AnimatePresence>
         </form>
     );
 }
 
+// Features Data
+const features = [
+    {
+        icon: Clock,
+        title: 'Zero Wait Time',
+        desc: 'Pre-book your slot and walk right in. No more wasting hours in queues.',
+        gradient: 'from-purple-500/20 to-violet-600/10',
+    },
+    {
+        icon: Calendar,
+        title: 'Smart Scheduling',
+        desc: 'AI-powered scheduling that adapts to your routine and preferences.',
+        gradient: 'from-blue-500/20 to-cyan-600/10',
+    },
+    {
+        icon: Star,
+        title: 'Premium Stylists',
+        desc: 'Handpicked, verified professionals rated by thousands of customers.',
+        gradient: 'from-amber-500/20 to-orange-600/10',
+    },
+    {
+        icon: Shield,
+        title: 'Secure Payments',
+        desc: 'End-to-end encrypted transactions. Pay only after your service.',
+        gradient: 'from-emerald-500/20 to-green-600/10',
+    },
+    {
+        icon: MapPin,
+        title: 'Nearby Salons',
+        desc: 'Discover top-rated salons in your area with real-time availability.',
+        gradient: 'from-rose-500/20 to-pink-600/10',
+    },
+    {
+        icon: Users,
+        title: 'Family Profiles',
+        desc: 'Add family members, manage bookings for everyone in one place.',
+        gradient: 'from-indigo-500/20 to-blue-600/10',
+    },
+];
+
+const testimonials = [
+    {
+        name: 'Priya Sharma',
+        role: 'Regular User',
+        text: "Absolutely love this app! No more waiting at the salon. I book my slot and walk right in. The stylists are incredible too!",
+        avatar: '\u{1F469}\u{1F3FB}',
+        rating: 5,
+    },
+    {
+        name: 'Rahul Menon',
+        role: 'Premium Member',
+        text: "HeyStyle changed how I get groomed. The scheduling is seamless, and the quality of service is consistently top-notch.",
+        avatar: '\u{1F468}\u{1F3FD}',
+        rating: 5,
+    },
+    {
+        name: 'Anita Desai',
+        role: 'Salon Partner',
+        text: "As a salon owner, this platform has increased our bookings by 3x. The interface is beautiful and our clients love it.",
+        avatar: '\u{1F469}\u{1F3FD}',
+        rating: 5,
+    },
+];
+
+const marqueeItems = [
+    'Haircut', 'Beard Trim', 'Facial', 'Hair Coloring', 'Manicure', 'Pedicure',
+    'Spa Treatment', 'Keratin', 'Bridal Makeup', 'Massage', 'Waxing', 'Threading',
+    'Hair Spa', 'Shaving', 'Styling', 'Bleaching'
+];
+
+// Main App
 function App() {
+    useSmoothScroll();
+    const heroRef = useRef(null);
+    const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+    const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+    const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
+    const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+    const [navScrolled, setNavScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => setNavScrolled(window.scrollY > 50);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // GSAP scroll-triggered animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            gsap.utils.toArray('.gsap-reveal').forEach((el) => {
+                gsap.fromTo(el,
+                    { opacity: 0, y: 40 },
+                    {
+                        opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+                        scrollTrigger: { trigger: el, start: 'top 85%', once: true },
+                    }
+                );
+            });
+        });
+        return () => ctx.revert();
+    }, []);
+
+    const scrollToSection = (id) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    };
+
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-primary selection:text-white">
+        <div className="min-h-screen bg-black text-white selection:bg-primary/30 selection:text-white overflow-x-hidden">
+            <CustomCursor />
+            <ScrollProgress />
+
             {/* Navbar */}
-            <nav className="fixed w-full z-50 top-0 start-0 border-b border-white/10 bg-black/50 backdrop-blur-md">
-                <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-                    <a href="#" className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <span className="self-center text-2xl font-semibold whitespace-nowrap tracking-tighter">Hey<span className="text-primary italic">Style</span></span>
+            <motion.nav
+                initial={{ y: -100 }}
+                animate={{ y: 0 }}
+                transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                className={`fixed w-full z-50 top-0 transition-all duration-500 ${navScrolled
+                    ? 'bg-black/70 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_4px_30px_rgba(0,0,0,0.3)]'
+                    : 'bg-transparent'
+                    }`}
+            >
+                <div className="max-w-screen-xl flex items-center justify-between mx-auto px-6 py-4">
+                    <a href="#" className="flex items-center gap-2 group">
+                        <motion.div
+                            whileHover={{ rotate: 10 }}
+                            className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center"
+                        >
+                            <Scissors size={16} className="text-white" />
+                        </motion.div>
+                        <span className="text-xl font-bold tracking-tight">
+                            Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
+                        </span>
                     </a>
-                    <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-                        <button type="button" className="text-black bg-primary hover:bg-primary/90 focus:ring-4 focus:outline-none focus:ring-primary/50 font-medium rounded-full text-sm px-6 py-2.5 text-center transition-all">
-                            Download App
-                        </button>
+
+                    <div className="hidden md:flex items-center gap-8">
+                        {['Features', 'Reviews', 'Contact'].map((item) => (
+                            <button
+                                key={item}
+                                onClick={() => scrollToSection(item.toLowerCase())}
+                                className="text-sm text-gray-400 hover:text-white transition-colors relative group"
+                            >
+                                {item}
+                                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-primary group-hover:w-full transition-all duration-300" />
+                            </button>
+                        ))}
                     </div>
+
+                    <MagneticButton
+                        onClick={() => scrollToSection('contact')}
+                        className="text-sm font-medium px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-white hover:bg-primary/20 hover:border-primary/30 transition-all duration-300"
+                    >
+                        Get Early Access
+                    </MagneticButton>
                 </div>
-            </nav>
+            </motion.nav>
 
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/20 blur-[120px] rounded-full pointing-events-none -z-10 opacity-50"></div>
+            <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+                {/* Background effects */}
+                <div className="absolute inset-0 -z-10">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/15 blur-[150px] rounded-full" />
+                    <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-purple-600/10 blur-[100px] rounded-full" />
+                    <div className="absolute bottom-1/4 left-1/4 w-[250px] h-[250px] bg-violet-500/8 blur-[120px] rounded-full" />
+                    {/* Grid */}
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(142,110,232,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(142,110,232,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+                </div>
 
-                <div className="max-w-screen-xl mx-auto px-4 text-center z-10 relative">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8 }}
-                        className="text-5xl md:text-7xl font-bold tracking-tight mb-6"
-                    >
-                        No Waiting. <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Just Styling.</span>
-                    </motion.h1>
+                <motion.div
+                    style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
+                    className="max-w-screen-xl mx-auto px-6 w-full"
+                >
+                    <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh] pt-24">
+                        {/* Left: Text */}
+                        <div className="text-center lg:text-left z-10">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] text-sm text-gray-400 mb-8"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                Now available for early access
+                            </motion.div>
 
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto"
-                    >
-                        Your all-in-one beauty & grooming app is here. Experience fast, effortless beauty and grooming—no queues, no delays.
-                    </motion.p>
+                            <TextReveal
+                                text="No Waiting."
+                                className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight !justify-start max-lg:!justify-center mb-2"
+                            />
+                            <motion.h1
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6, duration: 0.8 }}
+                                className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-8"
+                            >
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-400 to-secondary">
+                                    Just Styling.
+                                </span>
+                            </motion.h1>
 
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.8, duration: 0.6 }}
+                                className="text-lg text-gray-400 mb-10 max-w-lg mx-auto lg:mx-0 leading-relaxed"
+                            >
+                                Your all-in-one beauty & grooming app. Experience effortless booking — no queues, no delays, just premium styling at your fingertips.
+                            </motion.p>
+
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 1, duration: 0.6 }}
+                                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+                            >
+                                <MagneticButton
+                                    onClick={() => scrollToSection('contact')}
+                                    className="group flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-purple-400 text-white font-semibold rounded-full text-base px-8 py-4 transition-all hover:shadow-[0_0_40px_rgba(142,110,232,0.3)]"
+                                >
+                                    <Smartphone size={18} />
+                                    Get the App
+                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                </MagneticButton>
+
+                                <MagneticButton
+                                    onClick={() => scrollToSection('features')}
+                                    className="flex items-center justify-center gap-2 text-white border border-white/10 hover:bg-white/[0.04] font-medium rounded-full text-base px-8 py-4 transition-all"
+                                >
+                                    Explore Features
+                                    <ChevronDown size={16} />
+                                </MagneticButton>
+                            </motion.div>
+
+                            {/* Social proof */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 1.3 }}
+                                className="flex items-center gap-6 mt-12 justify-center lg:justify-start"
+                            >
+                                <div className="flex -space-x-3">
+                                    {['\u{1F469}\u{1F3FB}', '\u{1F468}\u{1F3FD}', '\u{1F469}\u{1F3FC}', '\u{1F468}\u{1F3FB}'].map((emoji, i) => (
+                                        <div key={i} className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center text-lg">
+                                            {emoji}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="text-sm">
+                                    <div className="flex items-center gap-1 text-primary">
+                                        {[...Array(5)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
+                                    </div>
+                                    <span className="text-gray-400">Loved by <span className="text-white font-medium">2,000+</span> users</span>
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* Right: 3D Mascot */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
+                            className="relative h-[400px] sm:h-[500px] lg:h-[550px]"
+                        >
+                            <Suspense fallback={
+                                <div className="h-full flex items-center justify-center">
+                                    <div className="w-16 h-16 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                                </div>
+                            }>
+                                <FloatingMascot className="w-full h-full" />
+                            </Suspense>
+
+                            {/* Floating badges around mascot */}
+                            <motion.div
+                                animate={{ y: [0, -10, 0] }}
+                                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                                className="absolute top-10 right-10 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                            >
+                                <Clock size={14} className="text-primary" />
+                                <span className="text-xs font-medium">0 min wait</span>
+                            </motion.div>
+
+                            <motion.div
+                                animate={{ y: [0, 10, 0] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                                className="absolute bottom-20 left-5 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                            >
+                                <Star size={14} className="text-yellow-400" fill="currentColor" />
+                                <span className="text-xs font-medium">4.9 Rating</span>
+                            </motion.div>
+
+                            <motion.div
+                                animate={{ y: [0, -8, 0] }}
+                                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                                className="absolute bottom-10 right-16 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                            >
+                                <Heart size={14} className="text-rose-400" fill="currentColor" />
+                                <span className="text-xs font-medium">2K+ Happy Users</span>
+                            </motion.div>
+                        </motion.div>
+                    </div>
+                </motion.div>
+
+                {/* Scroll indicator */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 2 }}
+                    className="absolute bottom-8 left-1/2 -translate-x-1/2"
+                >
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.4 }}
-                        className="flex flex-col sm:flex-row justify-center gap-4"
+                        animate={{ y: [0, 8, 0] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-6 h-10 rounded-full border border-white/20 flex items-start justify-center p-1.5"
                     >
-                        <button className="flex items-center justify-center gap-2 text-black bg-white hover:bg-gray-100 font-medium rounded-full text-lg px-8 py-4 transition-all">
-                            <Smartphone size={20} />
-                            Get the App
-                        </button>
-                        <button className="flex items-center justify-center gap-2 text-white border border-white/20 hover:bg-white/10 font-medium rounded-full text-lg px-8 py-4 transition-all">
-                            Partner with us
-                            <ArrowRight size={20} />
-                        </button>
+                        <motion.div className="w-1.5 h-1.5 rounded-full bg-primary" />
                     </motion.div>
+                </motion.div>
+            </section>
+
+            {/* Marquee */}
+            <div className="border-y border-white/[0.04] py-2 bg-white/[0.01]">
+                <Marquee items={marqueeItems} speed={40} />
+            </div>
+
+            {/* Stats Section */}
+            <section className="py-20 relative">
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        {[
+                            { value: 2000, suffix: '+', label: 'Happy Users' },
+                            { value: 500, suffix: '+', label: 'Partner Salons' },
+                            { value: 50000, suffix: '+', label: 'Bookings Done' },
+                            { value: 15, suffix: '+', label: 'Cities' },
+                        ].map((stat, i) => (
+                            <RevealSection key={i} delay={i * 0.1}>
+                                <div className="text-center">
+                                    <div className="text-3xl md:text-4xl font-bold text-white mb-1">
+                                        <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+                                    </div>
+                                    <p className="text-sm text-gray-500">{stat.label}</p>
+                                </div>
+                            </RevealSection>
+                        ))}
+                    </div>
                 </div>
             </section>
 
-            {/* Features/Mission Section */}
-            <section className="py-24 bg-zinc-950">
-                <div className="max-w-screen-xl mx-auto px-4">
-                    <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Stop wasting time waiting.</h2>
-                            <p className="text-gray-400 text-lg mb-8 leading-relaxed">
-                                HeyStyle was created with one mission: to end the long wait times in beauty and grooming services. We bring beauty, grooming, and styling directly into your schedule, not the other way around.
-                            </p>
-                            <ul className="space-y-4">
-                                {[
-                                    { icon: Clock, text: "Zero waiting time" },
-                                    { icon: Calendar, text: "Seamless booking" },
-                                    { icon: Star, text: "Premium stylists" }
-                                ].map((item, index) => (
-                                    <li key={index} className="flex items-center gap-4 text-xl">
-                                        <div className="p-2 rounded-full bg-primary/10 text-primary">
-                                            <item.icon size={24} />
+            {/* Features Section */}
+            <section id="features" className="py-24 relative">
+                <div className="absolute inset-0 -z-10">
+                    <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-primary/5 blur-[150px] rounded-full" />
+                </div>
+
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <RevealSection className="text-center mb-16">
+                        <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">Features</span>
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                            Everything you need,{' '}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
+                                nothing you don't
+                            </span>
+                        </h2>
+                        <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+                            Built for people who value their time. Every feature designed to make your beauty journey effortless.
+                        </p>
+                    </RevealSection>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {features.map((feature, i) => (
+                            <RevealSection key={i} delay={i * 0.08}>
+                                <TiltCard className="h-full">
+                                    <GlassCard hover={false} className="h-full p-8 group cursor-default">
+                                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                                            <feature.icon size={24} className="text-white" />
                                         </div>
-                                        {item.text}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="relative">
-                            {/* Placeholder for app mockups - using CSS shape for now */}
-                            <div className="aspect-square bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-3xl border border-white/5 p-8 relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
-                                <div className="h-full w-full bg-black rounded-2xl flex items-center justify-center border border-white/10">
-                                    <span className="text-zinc-700 font-bold text-2xl">App Screenshot</span>
+                                        <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                                        <p className="text-gray-400 leading-relaxed text-[15px]">{feature.desc}</p>
+                                    </GlassCard>
+                                </TiltCard>
+                            </RevealSection>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* How It Works */}
+            <section className="py-24 relative">
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <RevealSection className="text-center mb-16">
+                        <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">How it works</span>
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                            Three steps to{' '}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
+                                perfect styling
+                            </span>
+                        </h2>
+                    </RevealSection>
+
+                    <div className="grid md:grid-cols-3 gap-8 relative">
+                        {/* Connecting line */}
+                        <div className="hidden md:block absolute top-16 left-[16.67%] right-[16.67%] h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
+                        {[
+                            { step: '01', title: 'Choose Your Service', desc: 'Browse services and pick what you need. Filter by location, price, or ratings.', icon: Sparkles },
+                            { step: '02', title: 'Book Your Slot', desc: 'Select your preferred time. Our smart system ensures zero waiting.', icon: Calendar },
+                            { step: '03', title: 'Get Styled', desc: 'Walk in at your time and enjoy premium service from top professionals.', icon: CheckCircle },
+                        ].map((item, i) => (
+                            <RevealSection key={i} delay={i * 0.15}>
+                                <div className="text-center relative">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center mx-auto mb-6 relative z-10 shadow-[0_0_30px_rgba(142,110,232,0.2)]">
+                                        <span className="text-white font-bold text-sm">{item.step}</span>
+                                    </div>
+                                    <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
+                                    <p className="text-gray-400 text-[15px] leading-relaxed max-w-xs mx-auto">{item.desc}</p>
+                                </div>
+                            </RevealSection>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Testimonials */}
+            <section id="reviews" className="py-24 relative">
+                <div className="absolute inset-0 -z-10">
+                    <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full" />
+                </div>
+
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <RevealSection className="text-center mb-16">
+                        <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">Testimonials</span>
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                            What people are{' '}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
+                                saying
+                            </span>
+                        </h2>
+                    </RevealSection>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {testimonials.map((t, i) => (
+                            <RevealSection key={i} delay={i * 0.1}>
+                                <GlassCard className="p-8 h-full flex flex-col">
+                                    <div className="flex items-center gap-1 mb-4">
+                                        {[...Array(t.rating)].map((_, j) => (
+                                            <Star key={j} size={14} className="text-yellow-400" fill="currentColor" />
+                                        ))}
+                                    </div>
+                                    <p className="text-gray-300 text-[15px] leading-relaxed flex-1 mb-6">"{t.text}"</p>
+                                    <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
+                                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xl">
+                                            {t.avatar}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-white">{t.name}</p>
+                                            <p className="text-xs text-gray-500">{t.role}</p>
+                                        </div>
+                                    </div>
+                                </GlassCard>
+                            </RevealSection>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA Section */}
+            <section className="py-24 relative">
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <RevealSection>
+                        <div className="relative rounded-3xl overflow-hidden">
+                            {/* Background */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-purple-900/30 to-black" />
+                            <div className="absolute inset-0 bg-[linear-gradient(rgba(142,110,232,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(142,110,232,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+                            <div className="relative px-8 md:px-16 py-16 md:py-20 text-center">
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    whileInView={{ scale: 1 }}
+                                    transition={{ type: 'spring', delay: 0.2 }}
+                                    viewport={{ once: true }}
+                                    className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center mx-auto mb-8 shadow-[0_0_60px_rgba(142,110,232,0.3)]"
+                                >
+                                    <Scissors size={32} className="text-white" />
+                                </motion.div>
+
+                                <h2 className="text-3xl md:text-5xl font-bold mb-4">Ready to skip the queue?</h2>
+                                <p className="text-gray-400 text-lg max-w-xl mx-auto mb-10">
+                                    Join thousands of users who have already transformed their grooming experience.
+                                </p>
+
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    <MagneticButton
+                                        onClick={() => scrollToSection('contact')}
+                                        className="group flex items-center justify-center gap-3 bg-white text-black font-semibold rounded-full text-base px-8 py-4 transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.15)]"
+                                    >
+                                        Get Started Free
+                                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </MagneticButton>
+
+                                    <MagneticButton
+                                        className="flex items-center justify-center gap-2 text-white border border-white/10 hover:bg-white/[0.04] font-medium rounded-full text-base px-8 py-4 transition-all"
+                                    >
+                                        <Play size={16} fill="white" />
+                                        Watch Demo
+                                    </MagneticButton>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </RevealSection>
                 </div>
             </section>
 
-            {/* Enquiry Form */}
-            <section className="py-24" id="enquiry">
-                <div className="max-w-xl mx-auto px-4">
-                    <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Get in touch</h2>
-                    <p className="text-gray-400 text-center mb-10">
-                        Interested in partnering or have questions? Drop your details below.
-                    </p>
+            {/* Enquiry / Contact */}
+            <section id="contact" className="py-24 relative">
+                <div className="absolute inset-0 -z-10">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full" />
+                </div>
 
-                    <Form />
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <div className="grid lg:grid-cols-2 gap-16 items-start">
+                        {/* Left info */}
+                        <RevealSection>
+                            <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">Contact</span>
+                            <h2 className="text-3xl md:text-5xl font-bold mb-6">
+                                Let's build something{' '}
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
+                                    amazing together
+                                </span>
+                            </h2>
+                            <p className="text-gray-400 text-lg mb-10 leading-relaxed">
+                                Interested in partnering or have questions? We'd love to hear from you. Fill out the form and our team will get back to you within 24 hours.
+                            </p>
+
+                            <div className="space-y-6">
+                                {[
+                                    { icon: Mail, label: 'Email us', value: 'hello@heystyle.app' },
+                                    { icon: Phone, label: 'Call us', value: '+91 98765 43210' },
+                                    { icon: MapPin, label: 'Location', value: 'Bengaluru, India' },
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-start gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
+                                            <item.icon size={18} className="text-primary" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-0.5">{item.label}</p>
+                                            <p className="text-sm text-gray-300">{item.value}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </RevealSection>
+
+                        {/* Right form */}
+                        <RevealSection delay={0.2}>
+                            <GlassCard hover={false} className="p-8">
+                                <Form />
+                            </GlassCard>
+                        </RevealSection>
+                    </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="py-8 border-t border-white/10 text-center text-gray-500 text-sm">
-                <p>&copy; {new Date().getFullYear()} HeyStyle. All rights reserved.</p>
-            </footer>
+            <footer className="border-t border-white/[0.06] bg-white/[0.01]">
+                <div className="max-w-screen-xl mx-auto px-6 py-16">
+                    <div className="grid md:grid-cols-4 gap-10 mb-12">
+                        {/* Brand */}
+                        <div className="md:col-span-2">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center">
+                                    <Scissors size={16} className="text-white" />
+                                </div>
+                                <span className="text-xl font-bold tracking-tight">
+                                    Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
+                                </span>
+                            </div>
+                            <p className="text-gray-500 text-sm max-w-sm leading-relaxed mb-6">
+                                Transforming how India books beauty and grooming services. No waiting, just styling.
+                            </p>
+                            <div className="flex gap-3">
+                                {[Instagram, Twitter, Linkedin].map((Icon, i) => (
+                                    <a key={i} href="#" className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-gray-500 hover:text-primary hover:border-primary/30 transition-all">
+                                        <Icon size={16} />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
 
+                        {/* Links */}
+                        <div>
+                            <h4 className="text-sm font-semibold mb-4 text-gray-300">Product</h4>
+                            <ul className="space-y-2.5">
+                                {['Features', 'Pricing', 'For Salons', 'For Stylists'].map((item) => (
+                                    <li key={item}>
+                                        <a href="#" className="text-sm text-gray-500 hover:text-white transition-colors">{item}</a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 className="text-sm font-semibold mb-4 text-gray-300">Company</h4>
+                            <ul className="space-y-2.5">
+                                {['About', 'Careers', 'Blog', 'Contact'].map((item) => (
+                                    <li key={item}>
+                                        <a href="#" className="text-sm text-gray-500 hover:text-white transition-colors">{item}</a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-white/[0.06] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-gray-600 text-sm">&copy; {new Date().getFullYear()} HeyStyle. All rights reserved.</p>
+                        <div className="flex gap-6">
+                            <a href="#" className="text-xs text-gray-600 hover:text-white transition-colors">Privacy Policy</a>
+                            <a href="#" className="text-xs text-gray-600 hover:text-white transition-colors">Terms of Service</a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }
