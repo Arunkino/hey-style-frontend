@@ -842,8 +842,12 @@ function App() {
                                 Transforming how India books beauty and grooming services. No waiting, just styling.
                             </p>
                             <div className="flex gap-3">
-                                {[Instagram, Twitter, Linkedin].map((Icon, i) => (
-                                    <a key={i} href="#" className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-gray-500 hover:text-primary hover:border-primary/30 transition-all">
+                                {[
+                                    { Icon: Instagram, url: 'https://www.instagram.com/hey_style_india' },
+                                    { Icon: Twitter, url: '#' },
+                                    { Icon: Linkedin, url: '#' },
+                                ].map(({ Icon, url }, i) => (
+                                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-gray-500 hover:text-primary hover:border-primary/30 transition-all">
                                         <Icon size={16} />
                                     </a>
                                 ))}
