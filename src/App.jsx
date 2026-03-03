@@ -268,8 +268,8 @@ function Form() {
 const features = [
     {
         icon: Clock,
-        title: 'Zero Wait Time',
-        desc: 'Pre-book your slot and walk right in. No more wasting hours in queues.',
+        title: 'Skip the Queue',
+        desc: 'Pre-book your slot and arrive exactly when it\u2019s your turn. No more sitting around waiting.',
         gradient: 'from-purple-500/20 to-violet-600/10',
     },
     {
@@ -286,8 +286,8 @@ const features = [
     },
     {
         icon: Shield,
-        title: 'Secure Payments',
-        desc: 'End-to-end encrypted transactions. Pay only after your service.',
+        title: 'Flexible Payments',
+        desc: 'Choose how you pay — settle at the shop with no extra charges, or pay online securely.',
         gradient: 'from-emerald-500/20 to-green-600/10',
     },
     {
@@ -297,9 +297,9 @@ const features = [
         gradient: 'from-rose-500/20 to-pink-600/10',
     },
     {
-        icon: Users,
-        title: 'Family Profiles',
-        desc: 'Add family members, manage bookings for everyone in one place.',
+        icon: CheckCircle,
+        title: 'Instant Confirmations',
+        desc: 'Get real-time booking confirmations and timely reminders so you never miss your appointment.',
         gradient: 'from-indigo-500/20 to-blue-600/10',
     },
 ];
