@@ -524,7 +524,7 @@ function App() {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
-                            className="relative h-[400px] sm:h-[500px] lg:h-[550px]"
+                            className="relative h-[500px] sm:h-[650px] lg:h-[750px]"
                         >
                             <Suspense fallback={
                                 <div className="h-full flex items-center justify-center">
