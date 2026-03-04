@@ -9,6 +9,7 @@ import MagneticButton from './components/MagneticButton';
 import AnimatedCounter from './components/AnimatedCounter';
 import TextReveal from './components/TextReveal';
 import ParallaxSection from './components/ParallaxSection';
+import MascotSwing from './components/MascotSwing';
 
 const FloatingMascot = React.lazy(() => import('./components/FloatingMascot'));
 
@@ -334,6 +335,57 @@ const marqueeItems = [
     'Hair Spa', 'Shaving', 'Styling', 'Bleaching'
 ];
 
+// Interactive Particle with cursor repulsion
+function InteractiveParticle({ top, left, right, size, delay: d, dur, opacity: op, mouseX, mouseY }) {
+    const ref = useRef(null);
+    const repelX = useMotionValue(0);
+    const repelY = useMotionValue(0);
+    const springX = useSpring(repelX, { stiffness: 120, damping: 15 });
+    const springY = useSpring(repelY, { stiffness: 120, damping: 15 });
+
+    useEffect(() => {
+        const unsub = mouseX.on('change', () => {
+            if (!ref.current) return;
+            const rect = ref.current.getBoundingClientRect();
+            const px = rect.left + rect.width / 2 - springX.get();
+            const py = rect.top + rect.height / 2 - springY.get();
+            const mx = mouseX.get();
+            const my = mouseY.get();
+            const dx = px - mx;
+            const dy = py - my;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const radius = 120;
+            if (dist < radius && dist > 0) {
+                const force = ((radius - dist) / radius) * 60;
+                repelX.set((dx / dist) * force);
+                repelY.set((dy / dist) * force);
+            } else {
+                repelX.set(0);
+                repelY.set(0);
+            }
+        });
+        return unsub;
+    }, [mouseX, mouseY, repelX, repelY, springX, springY]);
+
+    return (
+        <motion.div
+            ref={ref}
+            className="absolute pointer-events-none z-[1]"
+            style={{ top, left, right, x: springX, y: springY }}
+        >
+            <motion.div
+                animate={{
+                    y: [0, -18, 6, -12, 0],
+                    opacity: [op * 0.7, op, op * 0.8, op, op * 0.7],
+                }}
+                transition={{ duration: dur, repeat: Infinity, ease: 'easeInOut', delay: d }}
+                className="rounded-full bg-primary"
+                style={{ width: size, height: size }}
+            />
+        </motion.div>
+    );
+}
+
 // Main App
 function App() {
     useSmoothScroll();
@@ -343,6 +395,18 @@ function App() {
     const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
     const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
     const [navScrolled, setNavScrolled] = useState(false);
+
+    // Cursor tracking for particle repulsion
+    const heroMouseX = useMotionValue(-1000);
+    const heroMouseY = useMotionValue(-1000);
+    const handleHeroPointerMove = (e) => {
+        heroMouseX.set(e.clientX);
+        heroMouseY.set(e.clientY);
+    };
+    const handleHeroPointerLeave = () => {
+        heroMouseX.set(-1000);
+        heroMouseY.set(-1000);
+    };
 
     useEffect(() => {
         const handleScroll = () => setNavScrolled(window.scrollY > 50);
@@ -421,7 +485,7 @@ function App() {
             </motion.nav>
 
             {/* Hero Section */}
-            <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <section ref={heroRef} onPointerMove={handleHeroPointerMove} onPointerLeave={handleHeroPointerLeave} className="relative min-h-screen flex items-center justify-center overflow-hidden">
                 {/* Background effects */}
                 <div className="absolute inset-0 -z-10">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/15 blur-[150px] rounded-full" />
@@ -431,13 +495,150 @@ function App() {
                     <div className="absolute inset-0 bg-[linear-gradient(rgba(142,110,232,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(142,110,232,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
                 </div>
 
+                {/* Floating glow orbs — spread across full hero */}
                 <motion.div
-                    style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-                    className="max-w-screen-xl mx-auto px-6 w-full"
+                    animate={{ x: [0, 100, -50, 0], y: [0, -60, 40, 0] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute top-[10%] right-[8%] w-20 h-20 rounded-full bg-primary/20 blur-[40px] pointer-events-none z-[1]"
+                />
+                <motion.div
+                    animate={{ x: [0, -70, 50, 0], y: [0, 50, -40, 0] }}
+                    transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute bottom-[15%] left-[6%] w-16 h-16 rounded-full bg-violet-300/25 blur-[35px] pointer-events-none z-[1]"
+                />
+                <motion.div
+                    animate={{ x: [0, 60, -40, 0], y: [0, -40, 60, 0] }}
+                    transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute top-[45%] left-[3%] w-14 h-14 rounded-full bg-purple-400/18 blur-[30px] pointer-events-none z-[1]"
+                />
+                <motion.div
+                    animate={{ x: [0, -40, 30, 0], y: [0, -50, 20, 0] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+                    className="absolute top-[20%] left-[15%] w-12 h-12 rounded-full bg-primary/12 blur-[25px] pointer-events-none z-[1]"
+                />
+                <motion.div
+                    animate={{ x: [0, 50, -60, 0], y: [0, 30, -40, 0] }}
+                    transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+                    className="absolute bottom-[30%] right-[12%] w-10 h-10 rounded-full bg-violet-400/15 blur-[22px] pointer-events-none z-[1]"
+                />
+                {/* Outer edge orbs — dimmer & smaller */}
+                <motion.div
+                    animate={{ x: [0, 30, -20, 0], y: [0, -25, 15, 0] }}
+                    transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                    className="absolute top-[5%] left-[2%] w-8 h-8 rounded-full bg-primary/8 blur-[18px] pointer-events-none z-[1]"
+                />
+                <motion.div
+                    animate={{ x: [0, -25, 35, 0], y: [0, 20, -30, 0] }}
+                    transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+                    className="absolute bottom-[5%] right-[3%] w-8 h-8 rounded-full bg-violet-300/8 blur-[18px] pointer-events-none z-[1]"
+                />
+
+                {/* Floating particles — 76 total, more intense near mascot, cursor-interactive */}
+                {[
+                    /* Near mascot (right-center) — brightest & largest */
+                    { top: '25%', left: '55%', size: 5, delay: 0, dur: 8, opacity: 0.7 },
+                    { top: '30%', right: '30%', size: 5, delay: 1, dur: 10, opacity: 0.7 },
+                    { top: '25%', left: '45%', size: 5, delay: 2, dur: 12, opacity: 0.7 },
+                    { top: '35%', right: '35%', size: 5, delay: 0.5, dur: 9, opacity: 0.65 },
+                    { top: '20%', left: '60%', size: 5, delay: 3, dur: 11, opacity: 0.7 },
+                    { top: '12%', right: '28%', size: 5, delay: 1.5, dur: 9, opacity: 0.7 },
+                    { top: '18%', left: '28%', size: 4, delay: 0.8, dur: 10, opacity: 0.65 },
+                    { top: '32%', right: '22%', size: 5, delay: 2.2, dur: 11, opacity: 0.7 },
+                    { top: '38%', left: '52%', size: 4, delay: 3.5, dur: 8, opacity: 0.65 },
+                    { top: '58%', right: '38%', size: 4, delay: 1.8, dur: 12, opacity: 0.6 },
+                    /* Near mascot — second set (offset positions & delays) */
+                    { top: '36%', left: '57%', size: 5, delay: 0.4, dur: 9, opacity: 0.68 },
+                    { top: '51%', right: '31%', size: 4, delay: 1.6, dur: 11, opacity: 0.68 },
+                    { top: '46%', left: '47%', size: 5, delay: 2.4, dur: 10, opacity: 0.7 },
+                    { top: '54%', right: '33%', size: 5, delay: 0.9, dur: 8, opacity: 0.65 },
+                    { top: '41%', left: '62%', size: 4, delay: 3.3, dur: 12, opacity: 0.68 },
+                    { top: '43%', right: '26%', size: 5, delay: 1.1, dur: 10, opacity: 0.7 },
+                    { top: '49%', left: '56%', size: 5, delay: 1.2, dur: 9, opacity: 0.65 },
+                    { top: '53%', right: '34%', size: 4, delay: 2.7, dur: 12, opacity: 0.68 },
+                    { top: '37%', left: '54%', size: 5, delay: 4.0, dur: 9, opacity: 0.63 },
+                    { top: '57%', right: '36%', size: 4, delay: 2.3, dur: 11, opacity: 0.62 },
+                    /* Mid distance — medium */
+                    { top: '20%', right: '20%', size: 4, delay: 1.5, dur: 13, opacity: 0.45 },
+                    { top: '70%', left: '25%', size: 3, delay: 4, dur: 10, opacity: 0.4 },
+                    { top: '25%', left: '30%', size: 3, delay: 2.5, dur: 14, opacity: 0.45 },
+                    { top: '65%', right: '22%', size: 4, delay: 0.8, dur: 9, opacity: 0.4 },
+                    { top: '30%', right: '40%', size: 3, delay: 3.5, dur: 11, opacity: 0.45 },
+                    { top: '75%', left: '50%', size: 3, delay: 1.2, dur: 8, opacity: 0.4 },
+                    { top: '22%', left: '42%', size: 3, delay: 2.8, dur: 12, opacity: 0.45 },
+                    { top: '68%', right: '25%', size: 3, delay: 5, dur: 11, opacity: 0.4 },
+                    { top: '28%', right: '15%', size: 4, delay: 3.2, dur: 10, opacity: 0.42 },
+                    { top: '72%', left: '35%', size: 3, delay: 0.6, dur: 13, opacity: 0.38 },
+                    { top: '18%', left: '50%', size: 3, delay: 4.5, dur: 9, opacity: 0.42 },
+                    { top: '60%', left: '18%', size: 3, delay: 1.8, dur: 14, opacity: 0.38 },
+                    /* Mid distance — second set */
+                    { top: '21%', right: '23%', size: 3, delay: 2.0, dur: 12, opacity: 0.43 },
+                    { top: '71%', left: '28%', size: 4, delay: 4.5, dur: 11, opacity: 0.4 },
+                    { top: '26%', left: '33%', size: 3, delay: 3.0, dur: 13, opacity: 0.44 },
+                    { top: '64%', right: '24%', size: 3, delay: 1.3, dur: 10, opacity: 0.42 },
+                    { top: '31%', right: '42%', size: 4, delay: 4.0, dur: 12, opacity: 0.43 },
+                    { top: '74%', left: '52%', size: 3, delay: 1.7, dur: 9, opacity: 0.38 },
+                    { top: '23%', left: '44%', size: 3, delay: 3.3, dur: 13, opacity: 0.43 },
+                    { top: '67%', right: '27%', size: 4, delay: 5.5, dur: 12, opacity: 0.4 },
+                    { top: '29%', right: '17%', size: 3, delay: 3.7, dur: 11, opacity: 0.4 },
+                    { top: '73%', left: '37%', size: 3, delay: 1.1, dur: 14, opacity: 0.37 },
+                    { top: '19%', left: '48%', size: 4, delay: 5.0, dur: 10, opacity: 0.4 },
+                    { top: '61%', left: '20%', size: 3, delay: 2.3, dur: 13, opacity: 0.37 },
+                    /* Far edges — dimmer & smaller */
+                    { top: '8%', left: '8%', size: 3, delay: 5, dur: 15, opacity: 0.25 },
+                    { top: '10%', right: '5%', size: 2, delay: 2, dur: 12, opacity: 0.2 },
+                    { top: '85%', left: '10%', size: 3, delay: 6, dur: 14, opacity: 0.25 },
+                    { top: '90%', right: '8%', size: 2, delay: 3, dur: 13, opacity: 0.2 },
+                    { top: '15%', left: '3%', size: 2, delay: 4.5, dur: 16, opacity: 0.18 },
+                    { top: '80%', right: '3%', size: 2, delay: 1, dur: 17, opacity: 0.18 },
+                    { top: '5%', left: '40%', size: 2, delay: 7, dur: 11, opacity: 0.2 },
+                    { top: '95%', right: '45%', size: 2, delay: 5.5, dur: 10, opacity: 0.2 },
+                    { top: '3%', right: '15%', size: 2, delay: 3.5, dur: 14, opacity: 0.22 },
+                    { top: '92%', left: '5%', size: 2, delay: 6.5, dur: 13, opacity: 0.18 },
+                    { top: '7%', left: '20%', size: 2, delay: 2.5, dur: 15, opacity: 0.2 },
+                    { top: '88%', right: '18%', size: 3, delay: 4, dur: 12, opacity: 0.22 },
+                    { top: '12%', left: '70%', size: 2, delay: 7.5, dur: 16, opacity: 0.18 },
+                    { top: '82%', left: '65%', size: 2, delay: 1.5, dur: 11, opacity: 0.2 },
+                    { top: '96%', left: '25%', size: 2, delay: 8, dur: 14, opacity: 0.18 },
+                    { top: '2%', right: '35%', size: 2, delay: 5, dur: 15, opacity: 0.2 },
+                    /* Far edges — second set */
+                    { top: '9%', left: '12%', size: 2, delay: 5.5, dur: 16, opacity: 0.23 },
+                    { top: '11%', right: '7%', size: 3, delay: 2.5, dur: 13, opacity: 0.2 },
+                    { top: '84%', left: '13%', size: 2, delay: 6.5, dur: 15, opacity: 0.23 },
+                    { top: '91%', right: '10%', size: 3, delay: 3.5, dur: 14, opacity: 0.2 },
+                    { top: '16%', left: '5%', size: 2, delay: 5.0, dur: 17, opacity: 0.18 },
+                    { top: '79%', right: '5%', size: 2, delay: 1.5, dur: 16, opacity: 0.18 },
+                    { top: '6%', left: '38%', size: 2, delay: 7.5, dur: 12, opacity: 0.2 },
+                    { top: '94%', right: '43%', size: 2, delay: 6.0, dur: 11, opacity: 0.2 },
+                    { top: '4%', right: '13%', size: 2, delay: 4.0, dur: 15, opacity: 0.22 },
+                    { top: '93%', left: '7%', size: 2, delay: 7.0, dur: 14, opacity: 0.18 },
+                    { top: '6%', left: '22%', size: 2, delay: 3.0, dur: 16, opacity: 0.2 },
+                    { top: '87%', right: '20%', size: 2, delay: 4.5, dur: 13, opacity: 0.22 },
+                    { top: '13%', left: '72%', size: 3, delay: 8.0, dur: 17, opacity: 0.18 },
+                    { top: '83%', left: '63%', size: 2, delay: 2.0, dur: 12, opacity: 0.2 },
+                    { top: '97%', left: '27%', size: 2, delay: 8.5, dur: 15, opacity: 0.18 },
+                    { top: '1%', right: '37%', size: 2, delay: 5.5, dur: 16, opacity: 0.2 },
+                ].map((p, i) => (
+                    <InteractiveParticle
+                        key={`particle-${i}`}
+                        top={p.top}
+                        left={p.left}
+                        right={p.right}
+                        size={p.size}
+                        delay={p.delay}
+                        dur={p.dur}
+                        opacity={p.opacity}
+                        mouseX={heroMouseX}
+                        mouseY={heroMouseY}
+                    />
+                ))}
+
+                <motion.div
+                    style={{ y: heroY }}
+                    className="max-w-screen-xl mx-auto px-6 w-full relative z-[2]"
                 >
-                    <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh] pt-24">
+                    <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center min-h-[80vh] pt-20 lg:pt-24 pb-10 lg:pb-0">
                         {/* Left: Text */}
-                        <div className="text-center lg:text-left z-10">
+                        <motion.div style={{ opacity: heroOpacity, scale: heroScale }} className="text-center lg:text-left z-10">
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -449,7 +650,7 @@ function App() {
                             </motion.div>
 
                             <TextReveal
-                                text="No Waiting."
+                                text="No Waiting"
                                 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight !justify-start max-lg:!justify-center mb-2"
                             />
                             <motion.h1
@@ -459,7 +660,7 @@ function App() {
                                 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-8"
                             >
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-400 to-secondary">
-                                    Just Styling.
+                                    Just Styling
                                 </span>
                             </motion.h1>
 
@@ -517,28 +718,29 @@ function App() {
                                     <span className="text-gray-400">Loved by <span className="text-white font-medium">2,000+</span> users</span>
                                 </div>
                             </motion.div>
-                        </div>
+                        </motion.div>
 
                         {/* Right: 3D Mascot */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
-                            className="relative h-[500px] sm:h-[650px] lg:h-[750px]"
+                            className="relative flex items-center justify-center order-first lg:order-last"
                         >
-                            <Suspense fallback={
-                                <div className="h-full flex items-center justify-center">
-                                    <div className="w-16 h-16 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                                </div>
-                            }>
-                                <FloatingMascot className="w-full h-full" />
-                            </Suspense>
+                            {/* Glow behind mascot */}
+                            <div className="absolute inset-0 -z-10 flex items-center justify-center">
+                                <div className="w-72 h-72 bg-primary/20 blur-[100px] rounded-full" />
+                            </div>
 
-                            {/* Floating badges around mascot */}
+                            <div className="w-[65vw] max-w-[300px] sm:max-w-[360px] lg:max-w-[420px] mx-auto">
+                                <MascotSwing src="./mascot_sitting_salon_chair.png" width={420} />
+                            </div>
+
+                            {/* Floating badges */}
                             <motion.div
                                 animate={{ y: [0, -10, 0] }}
                                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                                className="absolute top-10 right-10 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                                className="absolute top-10 right-4 sm:right-10 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
                             >
                                 <Clock size={14} className="text-primary" />
                                 <span className="text-xs font-medium">0 min wait</span>
@@ -547,7 +749,7 @@ function App() {
                             <motion.div
                                 animate={{ y: [0, 10, 0] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                                className="absolute bottom-20 left-5 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                                className="absolute bottom-20 left-4 sm:left-5 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
                             >
                                 <Star size={14} className="text-yellow-400" fill="currentColor" />
                                 <span className="text-xs font-medium">4.9 Rating</span>
@@ -556,7 +758,7 @@ function App() {
                             <motion.div
                                 animate={{ y: [0, -8, 0] }}
                                 transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                                className="absolute bottom-10 right-16 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                                className="absolute bottom-8 right-4 sm:right-16 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
                             >
                                 <Heart size={14} className="text-rose-400" fill="currentColor" />
                                 <span className="text-xs font-medium">2K+ Happy Users</span>
@@ -593,9 +795,9 @@ function App() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         {[
                             { value: 2000, suffix: '+', label: 'Happy Users' },
-                            { value: 500, suffix: '+', label: 'Partner Salons' },
-                            { value: 50000, suffix: '+', label: 'Bookings Done' },
-                            { value: 15, suffix: '+', label: 'Cities' },
+                            { value: 300, suffix: '+', label: 'Partner Salons' },
+                            { value: 25000, suffix: '+', label: 'Bookings Done' },
+                            { value: 5, suffix: '+', label: 'Cities' },
                         ].map((stat, i) => (
                             <RevealSection key={i} delay={i * 0.1}>
                                 <div className="text-center">
@@ -797,8 +999,8 @@ function App() {
 
                             <div className="space-y-6">
                                 {[
-                                    { icon: Mail, label: 'Email us', value: 'hello@heystyle.app' },
-                                    { icon: Phone, label: 'Call us', value: '+91 98765 43210' },
+                                    { icon: Mail, label: 'Email us', value: 'officialheystyle@gmail.com' },
+                                    { icon: Phone, label: 'Call us', value: '+91 79949 60606' },
                                     { icon: MapPin, label: 'Location', value: 'Bengaluru, India' },
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-start gap-4">
