@@ -391,8 +391,6 @@ function App() {
     useSmoothScroll();
     const heroRef = useRef(null);
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-    const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
     const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
     const [navScrolled, setNavScrolled] = useState(false);
 
@@ -436,7 +434,6 @@ function App() {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-primary/30 selection:text-white overflow-x-hidden">
-            <CustomCursor />
             <ScrollProgress />
 
             {/* Navbar */}
@@ -638,7 +635,7 @@ function App() {
                 >
                     <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center min-h-[80vh] pt-20 lg:pt-24 pb-10 lg:pb-0">
                         {/* Left: Text */}
-                        <motion.div style={{ opacity: heroOpacity, scale: heroScale }} className="text-center lg:text-left z-10">
+                        <motion.div className="text-center lg:text-left z-10">
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
