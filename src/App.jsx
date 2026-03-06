@@ -765,7 +765,7 @@ function App() {
                 </motion.div>
 
                 {/* Scroll indicator */}
-                <motion.div
+                {/* <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 2 }}
@@ -778,7 +778,7 @@ function App() {
                     >
                         <motion.div className="w-1.5 h-1.5 rounded-full bg-primary" />
                     </motion.div>
-                </motion.div>
+                </motion.div> */}
             </section>
 
             {/* Marquee */}
