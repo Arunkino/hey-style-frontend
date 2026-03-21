@@ -1,7 +1,7 @@
 {
   "name": "HeyStyle",
   "short_name": "HeyStyle",
-  "description": "Book salon & saloon appointments online. No waiting, just styling.",
+  "description": "Book salon appointments online instantly. No waiting, no queues — just styling.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
