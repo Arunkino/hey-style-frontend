@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { motion, useScroll, useTransform, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
-import { ArrowRight, Smartphone, Star, Clock, Calendar, CheckCircle, Loader2, Sparkles, Shield, Users, MapPin, ChevronDown, Play, Instagram, Twitter, Linkedin, Mail, Phone, Scissors, Heart } from 'lucide-react';
+import { ArrowRight, ArrowUp, Smartphone, Star, Clock, Calendar, CheckCircle, Loader2, Sparkles, Shield, Users, MapPin, ChevronDown, Play, Instagram, Twitter, Linkedin, Mail, Phone, Heart, Menu, X } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -288,7 +288,7 @@ const features = [
     {
         icon: Shield,
         title: 'Flexible Payments',
-        desc: 'Choose how you pay — settle at the shop with no extra charges, or pay online securely.',
+        desc: 'Choose how you pay. Settle at the shop with no extra charges, or pay online securely.',
         gradient: 'from-emerald-500/20 to-green-600/10',
     },
     {
@@ -393,6 +393,10 @@ function App() {
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
     const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
     const [navScrolled, setNavScrolled] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showBackToTop, setShowBackToTop] = useState(false);
+    const [navVisible, setNavVisible] = useState(true);
+    const lastScrollY = useRef(0);
 
     // Cursor tracking for particle repulsion
     const heroMouseX = useMotionValue(-1000);
@@ -407,8 +411,21 @@ function App() {
     };
 
     useEffect(() => {
-        const handleScroll = () => setNavScrolled(window.scrollY > 50);
-        window.addEventListener('scroll', handleScroll);
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            setNavScrolled(currentScrollY > 50);
+            setShowBackToTop(currentScrollY > window.innerHeight);
+
+            // Mobile: hide on scroll down, show on scroll up
+            if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+                setNavVisible(false);
+                setMobileMenuOpen(false);
+            } else {
+                setNavVisible(true);
+            }
+            lastScrollY.current = currentScrollY;
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -429,7 +446,91 @@ function App() {
     }, []);
 
     const scrollToSection = (id) => {
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        setMobileMenuOpen(false);
+        // Small delay to let menu close before scrolling
+        setTimeout(() => {
+            const el = document.getElementById(id);
+            if (el) {
+                const top = el.getBoundingClientRect().top + window.pageYOffset - 80;
+                window.scrollTo({ top, behavior: 'smooth' });
+            }
+        }, 100);
+    };
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Mascot preload
+    const [mascotLoaded, setMascotLoaded] = useState(false);
+    useEffect(() => {
+        const img = new Image();
+        img.src = './mascot_sitting_salon_chair.png';
+        img.onload = () => setMascotLoaded(true);
+    }, []);
+
+    // Testimonials auto-scroll
+    const [activeTestimonial, setActiveTestimonial] = useState(0);
+    const testimonialInterval = useRef(null);
+    const testimonialContainerRef = useRef(null);
+
+    // Features auto-scroll (mobile)
+    const [activeFeature, setActiveFeature] = useState(0);
+    const featureInterval = useRef(null);
+    const featureContainerRef = useRef(null);
+
+    const startFeatureAutoScroll = useCallback(() => {
+        featureInterval.current = setInterval(() => {
+            setActiveFeature(prev => (prev + 1) % features.length);
+        }, 3500);
+    }, []);
+
+    useEffect(() => {
+        startFeatureAutoScroll();
+        return () => clearInterval(featureInterval.current);
+    }, [startFeatureAutoScroll]);
+
+    useEffect(() => {
+        if (featureContainerRef.current) {
+            const container = featureContainerRef.current;
+            const card = container.children[activeFeature];
+            if (card) {
+                const scrollLeft = card.offsetLeft - container.offsetWidth / 2 + card.offsetWidth / 2;
+                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+            }
+        }
+    }, [activeFeature]);
+
+    const handleFeatureInteraction = () => {
+        clearInterval(featureInterval.current);
+        startFeatureAutoScroll();
+    };
+
+    const startTestimonialAutoScroll = useCallback(() => {
+        testimonialInterval.current = setInterval(() => {
+            setActiveTestimonial(prev => (prev + 1) % testimonials.length);
+        }, 4000);
+    }, []);
+
+    useEffect(() => {
+        startTestimonialAutoScroll();
+        return () => clearInterval(testimonialInterval.current);
+    }, [startTestimonialAutoScroll]);
+
+    useEffect(() => {
+        if (testimonialContainerRef.current) {
+            const container = testimonialContainerRef.current;
+            const card = container.children[activeTestimonial];
+            if (card) {
+                const scrollLeft = card.offsetLeft - container.offsetWidth / 2 + card.offsetWidth / 2;
+                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+            }
+        }
+    }, [activeTestimonial]);
+
+    const handleTestimonialInteraction = () => {
+        clearInterval(testimonialInterval.current);
+        startTestimonialAutoScroll();
     };
 
     return (
@@ -439,8 +540,8 @@ function App() {
             {/* Navbar */}
             <motion.nav
                 initial={{ y: -100 }}
-                animate={{ y: 0 }}
-                transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                animate={{ y: navVisible ? 0 : -100 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 25 }}
                 className={`fixed w-full z-50 top-0 transition-all duration-500 ${navScrolled
                     ? 'bg-black/70 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_4px_30px_rgba(0,0,0,0.3)]'
                     : 'bg-transparent'
@@ -452,7 +553,7 @@ function App() {
                             whileHover={{ rotate: 10 }}
                             className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center"
                         >
-                            <Scissors size={16} className="text-white" />
+                            <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
                         </motion.div>
                         <span className="text-xl font-bold tracking-tight">
                             Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
@@ -464,7 +565,7 @@ function App() {
                             <button
                                 key={item}
                                 onClick={() => scrollToSection(item.toLowerCase())}
-                                className="text-sm text-gray-400 hover:text-white transition-colors relative group"
+                                className="text-base text-gray-400 hover:text-white transition-colors relative group"
                             >
                                 {item}
                                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-primary group-hover:w-full transition-all duration-300" />
@@ -472,13 +573,57 @@ function App() {
                         ))}
                     </div>
 
+                    {/* Desktop: Get Early Access */}
                     <MagneticButton
                         onClick={() => scrollToSection('contact')}
-                        className="text-sm font-medium px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-white hover:bg-primary/20 hover:border-primary/30 transition-all duration-300"
+                        className="hidden md:inline-flex text-sm font-medium px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-white hover:bg-primary/20 hover:border-primary/30 transition-all duration-300"
                     >
                         Get Early Access
                     </MagneticButton>
+
+                    {/* Mobile: Hamburger */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden w-10 h-10 flex items-center justify-center rounded-full bg-white/[0.06] border border-white/[0.08] text-white"
+                    >
+                        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                 </div>
+
+                {/* Mobile dropdown menu */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="md:hidden bg-black/90 backdrop-blur-xl border-t border-white/[0.06] overflow-hidden"
+                        >
+                            <div className="px-6 py-4 space-y-1">
+                                {[
+                                    { label: 'Features', id: 'features' },
+                                    { label: 'Reviews', id: 'reviews' },
+                                    { label: 'Contact', id: 'contact' },
+                                ].map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => scrollToSection(item.id)}
+                                        className="block w-full text-left text-base text-gray-300 hover:text-white hover:bg-white/[0.04] px-4 py-3 rounded-xl transition-all"
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => scrollToSection('contact')}
+                                    className="block w-full text-left text-base text-primary font-medium px-4 py-3 rounded-xl hover:bg-primary/10 transition-all"
+                                >
+                                    Get Early Access
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.nav>
 
             {/* Hero Section */}
@@ -640,7 +785,7 @@ function App() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] text-sm text-gray-400 mb-8"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] text-sm md:text-base text-gray-400 mb-8"
                             >
                                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                                 Now available for early access
@@ -665,9 +810,9 @@ function App() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.8, duration: 0.6 }}
-                                className="text-lg text-gray-400 mb-10 max-w-lg mx-auto lg:mx-0 leading-relaxed"
+                                className="text-base md:text-lg text-gray-400 mb-10 max-w-lg mx-auto lg:mx-0 leading-relaxed"
                             >
-                                Your all-in-one beauty & grooming app. Experience effortless booking — no queues, no delays, just premium styling at your fingertips.
+                                Your all-in-one beauty & grooming app. Book effortlessly, skip the queue, and enjoy premium styling at your fingertips.
                             </motion.p>
 
                             <motion.div
@@ -708,9 +853,9 @@ function App() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="text-sm">
+                                <div className="text-sm md:text-base">
                                     <div className="flex items-center gap-1 text-primary">
-                                        {[...Array(5)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
+                                        {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
                                     </div>
                                     <span className="text-gray-400">Loved by <span className="text-white font-medium">2,000+</span> users</span>
                                 </div>
@@ -719,9 +864,9 @@ function App() {
 
                         {/* Right: 3D Mascot */}
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
+                            initial={{ opacity: 0, scale: 1.15 }}
+                            animate={mascotLoaded ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.15 }}
+                            transition={{ delay: 0.3, duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
                             className="relative flex items-center justify-center order-first lg:order-last"
                         >
                             {/* Glow behind mascot */}
@@ -729,8 +874,8 @@ function App() {
                                 <div className="w-72 h-72 bg-primary/20 blur-[100px] rounded-full" />
                             </div>
 
-                            <div className="w-[65vw] max-w-[300px] sm:max-w-[360px] lg:max-w-[420px] mx-auto">
-                                <MascotSwing src="./mascot_sitting_salon_chair.png" width={420} />
+                            <div className="w-[85vw] max-w-[360px] sm:max-w-[400px] lg:max-w-[460px] mx-auto">
+                                <MascotSwing src="./mascot_sitting_salon_chair.png" width={460} />
                             </div>
 
                             {/* Floating badges */}
@@ -740,7 +885,7 @@ function App() {
                                 className="absolute top-10 right-4 sm:right-10 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
                             >
                                 <Clock size={14} className="text-primary" />
-                                <span className="text-xs font-medium">0 min wait</span>
+                                <span className="text-sm font-medium">0 min wait</span>
                             </motion.div>
 
                             <motion.div
@@ -749,7 +894,7 @@ function App() {
                                 className="absolute bottom-20 left-4 sm:left-5 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
                             >
                                 <Star size={14} className="text-yellow-400" fill="currentColor" />
-                                <span className="text-xs font-medium">4.9 Rating</span>
+                                <span className="text-sm font-medium">4.9 Rating</span>
                             </motion.div>
 
                             <motion.div
@@ -758,7 +903,7 @@ function App() {
                                 className="absolute bottom-8 right-4 sm:right-16 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
                             >
                                 <Heart size={14} className="text-rose-400" fill="currentColor" />
-                                <span className="text-xs font-medium">2K+ Happy Users</span>
+                                <span className="text-sm font-medium">2K+ Happy Users</span>
                             </motion.div>
                         </motion.div>
                     </div>
@@ -801,7 +946,7 @@ function App() {
                                     <div className="text-3xl md:text-4xl font-bold text-white mb-1">
                                         <AnimatedCounter target={stat.value} suffix={stat.suffix} />
                                     </div>
-                                    <p className="text-sm text-gray-500">{stat.label}</p>
+                                    <p className="text-sm md:text-base text-gray-500">{stat.label}</p>
                                 </div>
                             </RevealSection>
                         ))}
@@ -817,19 +962,20 @@ function App() {
 
                 <div className="max-w-screen-xl mx-auto px-6">
                     <RevealSection className="text-center mb-16">
-                        <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">Features</span>
+                        <span className="inline-block text-primary text-sm md:text-base font-medium tracking-wider uppercase mb-4">Features</span>
                         <h2 className="text-3xl md:text-5xl font-bold mb-4">
                             Everything you need,{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
                                 nothing you don't
                             </span>
                         </h2>
-                        <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+                        <p className="text-gray-400 max-w-2xl mx-auto text-base md:text-lg">
                             Built for people who value their time. Every feature designed to make your beauty journey effortless.
                         </p>
                     </RevealSection>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Desktop: grid layout */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {features.map((feature, i) => (
                             <RevealSection key={i} delay={i * 0.08}>
                                 <TiltCard className="h-full">
@@ -838,10 +984,40 @@ function App() {
                                             <feature.icon size={24} className="text-white" />
                                         </div>
                                         <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                                        <p className="text-gray-400 leading-relaxed text-[15px]">{feature.desc}</p>
+                                        <p className="text-gray-400 leading-relaxed text-base">{feature.desc}</p>
                                     </GlassCard>
                                 </TiltCard>
                             </RevealSection>
+                        ))}
+                    </div>
+
+                    {/* Mobile: horizontal scroll with auto-scroll */}
+                    <div
+                        ref={featureContainerRef}
+                        onTouchStart={handleFeatureInteraction}
+                        onMouseDown={handleFeatureInteraction}
+                        className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory pb-6 -mx-6 px-6 scrollbar-hide scroll-smooth"
+                    >
+                        {features.map((feature, i) => (
+                            <div key={i} className={`snap-center shrink-0 w-[80vw] max-w-[320px] transition-all duration-300 ${activeFeature === i ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-70'}`}>
+                                <GlassCard hover={false} className="h-full p-6 group cursor-default">
+                                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                                        <feature.icon size={22} className="text-white" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                                    <p className="text-gray-400 leading-relaxed text-base">{feature.desc}</p>
+                                </GlassCard>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Dots indicator for mobile */}
+                    <div className="md:hidden flex justify-center mt-4 gap-2">
+                        {features.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => { setActiveFeature(i); handleFeatureInteraction(); }}
+                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeFeature === i ? 'bg-primary w-5' : 'bg-white/20 hover:bg-white/40'}`}
+                            />
                         ))}
                     </div>
                 </div>
@@ -851,7 +1027,7 @@ function App() {
             <section className="py-24 relative">
                 <div className="max-w-screen-xl mx-auto px-6">
                     <RevealSection className="text-center mb-16">
-                        <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">How it works</span>
+                        <span className="inline-block text-primary text-sm md:text-base font-medium tracking-wider uppercase mb-4">How it works</span>
                         <h2 className="text-3xl md:text-5xl font-bold mb-4">
                             Three steps to{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
@@ -875,7 +1051,7 @@ function App() {
                                         <span className="text-white font-bold text-sm">{item.step}</span>
                                     </div>
                                     <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                                    <p className="text-gray-400 text-[15px] leading-relaxed max-w-xs mx-auto">{item.desc}</p>
+                                    <p className="text-gray-400 text-base leading-relaxed max-w-xs mx-auto">{item.desc}</p>
                                 </div>
                             </RevealSection>
                         ))}
@@ -890,8 +1066,8 @@ function App() {
                 </div>
 
                 <div className="max-w-screen-xl mx-auto px-6">
-                    <RevealSection className="text-center mb-16">
-                        <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">Testimonials</span>
+                    <RevealSection className="text-center mb-12">
+                        <span className="inline-block text-primary text-sm md:text-base font-medium tracking-wider uppercase mb-4">Testimonials</span>
                         <h2 className="text-3xl md:text-5xl font-bold mb-4">
                             What people are{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
@@ -900,27 +1076,44 @@ function App() {
                         </h2>
                     </RevealSection>
 
-                    <div className="grid md:grid-cols-3 gap-6">
+                    {/* Swipable testimonial cards */}
+                    <div
+                        ref={testimonialContainerRef}
+                        onTouchStart={handleTestimonialInteraction}
+                        onMouseDown={handleTestimonialInteraction}
+                        className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-6 -mx-6 px-6 scrollbar-hide scroll-smooth"
+                    >
                         {testimonials.map((t, i) => (
-                            <RevealSection key={i} delay={i * 0.1}>
+                            <div key={i} className={`snap-center shrink-0 w-[85vw] md:w-[400px] transition-all duration-300 ${activeTestimonial === i ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-70'}`}>
                                 <GlassCard className="p-8 h-full flex flex-col">
                                     <div className="flex items-center gap-1 mb-4">
                                         {[...Array(t.rating)].map((_, j) => (
-                                            <Star key={j} size={14} className="text-yellow-400" fill="currentColor" />
+                                            <Star key={j} size={16} className="text-yellow-400" fill="currentColor" />
                                         ))}
                                     </div>
-                                    <p className="text-gray-300 text-[15px] leading-relaxed flex-1 mb-6">"{t.text}"</p>
+                                    <p className="text-gray-300 text-base leading-relaxed flex-1 mb-6">"{t.text}"</p>
                                     <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
                                         <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xl">
                                             {t.avatar}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-white">{t.name}</p>
-                                            <p className="text-xs text-gray-500">{t.role}</p>
+                                            <p className="text-base font-medium text-white">{t.name}</p>
+                                            <p className="text-sm text-gray-500">{t.role}</p>
                                         </div>
                                     </div>
                                 </GlassCard>
-                            </RevealSection>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Dots indicator */}
+                    <div className="flex justify-center mt-6 gap-2">
+                        {testimonials.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => { setActiveTestimonial(i); handleTestimonialInteraction(); }}
+                                className={`w-2 h-2 rounded-full transition-all duration-300 ${activeTestimonial === i ? 'bg-primary w-6' : 'bg-white/20 hover:bg-white/40'}`}
+                            />
                         ))}
                     </div>
                 </div>
@@ -943,7 +1136,7 @@ function App() {
                                     viewport={{ once: true }}
                                     className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center mx-auto mb-8 shadow-[0_0_60px_rgba(142,110,232,0.3)]"
                                 >
-                                    <Scissors size={32} className="text-white" />
+                                    <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
                                 </motion.div>
 
                                 <h2 className="text-3xl md:text-5xl font-bold mb-4">Ready to skip the queue?</h2>
@@ -983,7 +1176,7 @@ function App() {
                     <div className="grid lg:grid-cols-2 gap-16 items-start">
                         {/* Left info */}
                         <RevealSection>
-                            <span className="inline-block text-primary text-sm font-medium tracking-wider uppercase mb-4">Contact</span>
+                            <span className="inline-block text-primary text-sm md:text-base font-medium tracking-wider uppercase mb-4">Contact</span>
                             <h2 className="text-3xl md:text-5xl font-bold mb-6">
                                 Let's build something{' '}
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
@@ -996,17 +1189,21 @@ function App() {
 
                             <div className="space-y-6">
                                 {[
-                                    { icon: Mail, label: 'Email us', value: 'officialheystyle@gmail.com' },
-                                    { icon: Phone, label: 'Call us', value: '+91 79949 60606' },
-                                    { icon: MapPin, label: 'Location', value: 'Bengaluru, India' },
+                                    { icon: Mail, label: 'Email us', value: 'officialheystyle@gmail.com', href: 'mailto:officialheystyle@gmail.com' },
+                                    { icon: Phone, label: 'Call us', value: '+91 79949 60606', href: 'tel:+917994960606' },
+                                    { icon: MapPin, label: 'Location', value: 'Bengaluru, India', href: null },
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-start gap-4">
                                         <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
                                             <item.icon size={18} className="text-primary" />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500 mb-0.5">{item.label}</p>
-                                            <p className="text-sm text-gray-300">{item.value}</p>
+                                            <p className="text-sm text-gray-500 mb-0.5">{item.label}</p>
+                                            {item.href ? (
+                                                <a href={item.href} className="text-base text-gray-300 hover:text-primary transition-colors">{item.value}</a>
+                                            ) : (
+                                                <p className="text-base text-gray-300">{item.value}</p>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -1031,13 +1228,13 @@ function App() {
                         <div className="md:col-span-2">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center">
-                                    <Scissors size={16} className="text-white" />
+                                    <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
                                 </div>
                                 <span className="text-xl font-bold tracking-tight">
                                     Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
                                 </span>
                             </div>
-                            <p className="text-gray-500 text-sm max-w-sm leading-relaxed mb-6">
+                            <p className="text-gray-500 text-base max-w-sm leading-relaxed mb-6">
                                 Transforming how India books beauty and grooming services. No waiting, just styling.
                             </p>
                             <div className="flex gap-3">
@@ -1055,22 +1252,22 @@ function App() {
 
                         {/* Links */}
                         <div>
-                            <h4 className="text-sm font-semibold mb-4 text-gray-300">Product</h4>
+                            <h4 className="text-base font-semibold mb-4 text-gray-300">Product</h4>
                             <ul className="space-y-2.5">
                                 {['Features', 'Pricing', 'For Salons', 'For Stylists'].map((item) => (
                                     <li key={item}>
-                                        <a href="#" className="text-sm text-gray-500 hover:text-white transition-colors">{item}</a>
+                                        <a href="#" className="text-base text-gray-500 hover:text-white transition-colors">{item}</a>
                                     </li>
                                 ))}
                             </ul>
                         </div>
 
                         <div>
-                            <h4 className="text-sm font-semibold mb-4 text-gray-300">Company</h4>
+                            <h4 className="text-base font-semibold mb-4 text-gray-300">Company</h4>
                             <ul className="space-y-2.5">
                                 {['About', 'Careers', 'Blog', 'Contact'].map((item) => (
                                     <li key={item}>
-                                        <a href="#" className="text-sm text-gray-500 hover:text-white transition-colors">{item}</a>
+                                        <a href="#" className="text-base text-gray-500 hover:text-white transition-colors">{item}</a>
                                     </li>
                                 ))}
                             </ul>
@@ -1078,14 +1275,31 @@ function App() {
                     </div>
 
                     <div className="border-t border-white/[0.06] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-gray-600 text-sm">&copy; {new Date().getFullYear()} HeyStyle. All rights reserved.</p>
+                        <p className="text-gray-600 text-sm md:text-base">&copy; {new Date().getFullYear()} HeyStyle. All rights reserved.</p>
                         <div className="flex gap-6">
-                            <a href="#" className="text-xs text-gray-600 hover:text-white transition-colors">Privacy Policy</a>
-                            <a href="#" className="text-xs text-gray-600 hover:text-white transition-colors">Terms of Service</a>
+                            <a href="#" className="text-sm text-gray-600 hover:text-white transition-colors">Privacy Policy</a>
+                            <a href="#" className="text-sm text-gray-600 hover:text-white transition-colors">Terms of Service</a>
                         </div>
                     </div>
                 </div>
             </footer>
+
+            {/* Back to Top Button */}
+            <AnimatePresence>
+                {showBackToTop && (
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
+                        onClick={scrollToTop}
+                        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-primary/90 hover:bg-primary text-white flex items-center justify-center shadow-[0_0_20px_rgba(142,110,232,0.3)] hover:shadow-[0_0_30px_rgba(142,110,232,0.5)] transition-all backdrop-blur-sm"
+                        aria-label="Back to top"
+                    >
+                        <ArrowUp size={20} />
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
