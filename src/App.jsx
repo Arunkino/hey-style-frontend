@@ -129,8 +129,8 @@ function Marquee({ items, direction = 'left', speed = 30 }) {
                 transition={{ duration: speed, repeat: Infinity, ease: 'linear' }}
             >
                 {[...items, ...items].map((item, i) => (
-                    <span key={i} className="text-zinc-600 text-lg font-medium flex items-center gap-2">
-                        <Sparkles size={14} className="text-primary/40" />
+                    <span key={i} className="text-zinc-300 text-lg font-medium flex items-center gap-2">
+                        <Sparkles size={14} className="text-primary/70" />
                         {item}
                     </span>
                 ))}
@@ -307,32 +307,32 @@ const features = [
 
 const testimonials = [
     {
-        name: 'Priya Sharma',
+        name: 'Aravind K Suresh',
         role: 'Regular User',
         text: "Absolutely love this app! No more waiting at the salon. I book my slot and walk right in. The stylists are incredible too!",
-        avatar: '\u{1F469}\u{1F3FB}',
+        avatar: '\u{1F468}\u{1F3FB}',
         rating: 5,
     },
     {
-        name: 'Rahul Menon',
+        name: 'Rahul KS',
         role: 'Premium Member',
         text: "HeyStyle changed how I get groomed. The scheduling is seamless, and the quality of service is consistently top-notch.",
         avatar: '\u{1F468}\u{1F3FD}',
         rating: 5,
     },
     {
-        name: 'Anita Desai',
+        name: 'Vishnu Anilkumar',
         role: 'Salon Partner',
         text: "As a salon owner, this platform has increased our bookings by 3x. The interface is beautiful and our clients love it.",
-        avatar: '\u{1F469}\u{1F3FD}',
+        avatar: '\u{1F468}\u{1F3FE}',
         rating: 5,
     },
 ];
 
 const marqueeItems = [
-    'Haircut', 'Beard Trim', 'Facial', 'Hair Coloring', 'Manicure', 'Pedicure',
-    'Spa Treatment', 'Keratin', 'Bridal Makeup', 'Massage', 'Waxing', 'Threading',
-    'Hair Spa', 'Shaving', 'Styling', 'Bleaching'
+    'Haircut', 'Beard Trim', 'Hair Coloring', 'Keratin Treatment', 'Bridal Makeup',
+    'Waxing', 'Threading', 'Hair Spa', 'Clean Shave', 'Styling', 'Bleaching',
+    'Facial', 'Highlights', 'Smoothening', 'Head Massage', 'Scalp Treatment'
 ];
 
 // Interactive Particle with cursor repulsion
@@ -473,60 +473,147 @@ function App() {
     const [activeTestimonial, setActiveTestimonial] = useState(0);
     const testimonialInterval = useRef(null);
     const testimonialContainerRef = useRef(null);
+    const testimonialResetting = useRef(false);
 
     // Features auto-scroll (mobile)
     const [activeFeature, setActiveFeature] = useState(0);
     const featureInterval = useRef(null);
     const featureContainerRef = useRef(null);
+    const featureResetting = useRef(false);
 
-    const startFeatureAutoScroll = useCallback(() => {
-        featureInterval.current = setInterval(() => {
-            setActiveFeature(prev => (prev + 1) % features.length);
-        }, 3500);
+    // Helper: scroll a container to a specific child index
+    const scrollContainerToIdx = useCallback((containerRef, idx, instant = false) => {
+        const container = containerRef.current;
+        if (!container) return;
+        const card = container.children[idx];
+        if (!card) return;
+        const scrollLeft = card.offsetLeft - container.offsetWidth / 2 + card.offsetWidth / 2;
+        if (instant) {
+            container.scrollLeft = scrollLeft;
+        } else {
+            container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+        }
     }, []);
+
+    // Feature auto-scroll with infinite loop
+    const startFeatureAutoScroll = useCallback(() => {
+        clearInterval(featureInterval.current);
+        featureInterval.current = setInterval(() => {
+            if (featureResetting.current) return;
+            setActiveFeature(prev => {
+                const next = (prev + 1) % features.length;
+                if (prev === features.length - 1) {
+                    // Scroll to the cloned first item (index = features.length) then silently reset
+                    featureResetting.current = true;
+                    scrollContainerToIdx(featureContainerRef, features.length, false);
+                    setTimeout(() => {
+                        scrollContainerToIdx(featureContainerRef, 0, true);
+                        featureResetting.current = false;
+                    }, 550);
+                } else {
+                    scrollContainerToIdx(featureContainerRef, next, false);
+                }
+                return next;
+            });
+        }, 3500);
+    }, [scrollContainerToIdx]);
 
     useEffect(() => {
         startFeatureAutoScroll();
         return () => clearInterval(featureInterval.current);
     }, [startFeatureAutoScroll]);
 
+    // Scroll listener to update feature dots on manual swipe
     useEffect(() => {
-        if (featureContainerRef.current) {
-            const container = featureContainerRef.current;
-            const card = container.children[activeFeature];
-            if (card) {
-                const scrollLeft = card.offsetLeft - container.offsetWidth / 2 + card.offsetWidth / 2;
-                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-            }
-        }
-    }, [activeFeature]);
+        const container = featureContainerRef.current;
+        if (!container) return;
+        let debounce;
+        const handleScroll = () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                if (featureResetting.current) return;
+                const center = container.scrollLeft + container.offsetWidth / 2;
+                let closest = 0;
+                let minDist = Infinity;
+                // Scan original items (first half of doubled list)
+                Array.from(container.children).slice(0, features.length).forEach((child, i) => {
+                    const dist = Math.abs(child.offsetLeft + child.offsetWidth / 2 - center);
+                    if (dist < minDist) { minDist = dist; closest = i; }
+                });
+                // If user scrolled into the cloned region, silently reset
+                const cloneStart = container.children[features.length];
+                if (cloneStart && container.scrollLeft >= cloneStart.offsetLeft - container.offsetWidth / 2) {
+                    featureResetting.current = true;
+                    container.scrollLeft = container.children[closest].offsetLeft - container.offsetWidth / 2 + container.children[closest].offsetWidth / 2;
+                    featureResetting.current = false;
+                }
+                setActiveFeature(closest);
+            }, 80);
+        };
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => { container.removeEventListener('scroll', handleScroll); clearTimeout(debounce); };
+    }, []);
 
     const handleFeatureInteraction = () => {
         clearInterval(featureInterval.current);
         startFeatureAutoScroll();
     };
 
+    // Testimonial auto-scroll with infinite loop
     const startTestimonialAutoScroll = useCallback(() => {
+        clearInterval(testimonialInterval.current);
         testimonialInterval.current = setInterval(() => {
-            setActiveTestimonial(prev => (prev + 1) % testimonials.length);
+            if (testimonialResetting.current) return;
+            setActiveTestimonial(prev => {
+                const next = (prev + 1) % testimonials.length;
+                if (prev === testimonials.length - 1) {
+                    testimonialResetting.current = true;
+                    scrollContainerToIdx(testimonialContainerRef, testimonials.length, false);
+                    setTimeout(() => {
+                        scrollContainerToIdx(testimonialContainerRef, 0, true);
+                        testimonialResetting.current = false;
+                    }, 550);
+                } else {
+                    scrollContainerToIdx(testimonialContainerRef, next, false);
+                }
+                return next;
+            });
         }, 4000);
-    }, []);
+    }, [scrollContainerToIdx]);
 
     useEffect(() => {
         startTestimonialAutoScroll();
         return () => clearInterval(testimonialInterval.current);
     }, [startTestimonialAutoScroll]);
 
+    // Scroll listener to update testimonial dots on manual swipe
     useEffect(() => {
-        if (testimonialContainerRef.current) {
-            const container = testimonialContainerRef.current;
-            const card = container.children[activeTestimonial];
-            if (card) {
-                const scrollLeft = card.offsetLeft - container.offsetWidth / 2 + card.offsetWidth / 2;
-                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-            }
-        }
-    }, [activeTestimonial]);
+        const container = testimonialContainerRef.current;
+        if (!container) return;
+        let debounce;
+        const handleScroll = () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                if (testimonialResetting.current) return;
+                const center = container.scrollLeft + container.offsetWidth / 2;
+                let closest = 0;
+                let minDist = Infinity;
+                Array.from(container.children).slice(0, testimonials.length).forEach((child, i) => {
+                    const dist = Math.abs(child.offsetLeft + child.offsetWidth / 2 - center);
+                    if (dist < minDist) { minDist = dist; closest = i; }
+                });
+                const cloneStart = container.children[testimonials.length];
+                if (cloneStart && container.scrollLeft >= cloneStart.offsetLeft - container.offsetWidth / 2) {
+                    testimonialResetting.current = true;
+                    container.scrollLeft = container.children[closest].offsetLeft - container.offsetWidth / 2 + container.children[closest].offsetWidth / 2;
+                    testimonialResetting.current = false;
+                }
+                setActiveTestimonial(closest);
+            }, 80);
+        };
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => { container.removeEventListener('scroll', handleScroll); clearTimeout(debounce); };
+    }, []);
 
     const handleTestimonialInteraction = () => {
         clearInterval(testimonialInterval.current);
@@ -555,9 +642,10 @@ function App() {
                         >
                             <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
                         </motion.div>
-                        <span className="text-xl font-bold tracking-tight">
+                        <img src="/HeyStyle_White.svg" alt="HeyStyle" className="h-[6rem]" />
+                        {/* <span className="text-xl font-bold tracking-tight">
                             Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
-                        </span>
+                        </span> */}
                     </a>
 
                     <div className="hidden md:flex items-center gap-8">
@@ -781,15 +869,15 @@ function App() {
                     <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center min-h-[80vh] pt-20 lg:pt-24 pb-10 lg:pb-0">
                         {/* Left: Text */}
                         <motion.div className="text-center lg:text-left z-10">
-                            <motion.div
+                            {/* <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] text-sm md:text-base text-gray-400 mb-8"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-gray-400 mb-6"
                             >
-                                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                                 Now available for early access
-                            </motion.div>
+                            </motion.div> */}
 
                             <TextReveal
                                 text="No Waiting"
@@ -840,7 +928,7 @@ function App() {
                             </motion.div>
 
                             {/* Social proof */}
-                            <motion.div
+                            {/* <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 1.3 }}
@@ -859,7 +947,7 @@ function App() {
                                     </div>
                                     <span className="text-gray-400">Loved by <span className="text-white font-medium">2,000+</span> users</span>
                                 </div>
-                            </motion.div>
+                            </motion.div> */}
                         </motion.div>
 
                         {/* Right: 3D Mascot */}
@@ -879,31 +967,31 @@ function App() {
                             </div>
 
                             {/* Floating badges */}
-                            <motion.div
+                            {/* <motion.div
                                 animate={{ y: [0, -10, 0] }}
                                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                                 className="absolute top-10 right-4 sm:right-10 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
                             >
                                 <Clock size={14} className="text-primary" />
                                 <span className="text-sm font-medium">0 min wait</span>
-                            </motion.div>
+                            </motion.div> */}
 
                             <motion.div
                                 animate={{ y: [0, 10, 0] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                                className="absolute bottom-20 left-4 sm:left-5 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                                className="absolute bottom-20 left-4 sm:left-5 glass-card px-2.5 py-1 flex items-center gap-1.5 !rounded-full"
                             >
-                                <Star size={14} className="text-yellow-400" fill="currentColor" />
-                                <span className="text-sm font-medium">4.9 Rating</span>
+                                <Star size={11} className="text-yellow-400" fill="currentColor" />
+                                <span className="text-xs font-medium">4.9 Rating</span>
                             </motion.div>
 
                             <motion.div
                                 animate={{ y: [0, -8, 0] }}
                                 transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                                className="absolute bottom-8 right-4 sm:right-16 glass-card px-4 py-2 flex items-center gap-2 !rounded-full"
+                                className="absolute bottom-8 right-4 sm:right-16 glass-card px-2.5 py-1 flex items-center gap-1.5 !rounded-full"
                             >
-                                <Heart size={14} className="text-rose-400" fill="currentColor" />
-                                <span className="text-sm font-medium">2K+ Happy Users</span>
+                                <Heart size={11} className="text-rose-400" fill="currentColor" />
+                                <span className="text-xs font-medium">2K+ Happy Users</span>
                             </motion.div>
                         </motion.div>
                     </div>
@@ -932,7 +1020,7 @@ function App() {
             </div>
 
             {/* Stats Section */}
-            <section className="py-20 relative">
+            <section className="py-10 md:py-20 relative">
                 <div className="max-w-screen-xl mx-auto px-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         {[
@@ -955,7 +1043,7 @@ function App() {
             </section>
 
             {/* Features Section */}
-            <section id="features" className="py-24 relative">
+            <section id="features" className="py-12 md:py-24 relative">
                 <div className="absolute inset-0 -z-10">
                     <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-primary/5 blur-[150px] rounded-full" />
                 </div>
@@ -998,8 +1086,8 @@ function App() {
                         onMouseDown={handleFeatureInteraction}
                         className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory pb-6 -mx-6 px-6 scrollbar-hide scroll-smooth"
                     >
-                        {features.map((feature, i) => (
-                            <div key={i} className={`snap-center shrink-0 w-[80vw] max-w-[320px] transition-all duration-300 ${activeFeature === i ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-70'}`}>
+                        {[...features, ...features].map((feature, i) => (
+                            <div key={i} className={`snap-center shrink-0 w-[80vw] max-w-[320px] transition-all duration-300 ${activeFeature === i % features.length ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-70'}`}>
                                 <GlassCard hover={false} className="h-full p-6 group cursor-default">
                                     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                                         <feature.icon size={22} className="text-white" />
@@ -1015,7 +1103,7 @@ function App() {
                         {features.map((_, i) => (
                             <button
                                 key={i}
-                                onClick={() => { setActiveFeature(i); handleFeatureInteraction(); }}
+                                onClick={() => { setActiveFeature(i); scrollContainerToIdx(featureContainerRef, i, false); handleFeatureInteraction(); }}
                                 className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeFeature === i ? 'bg-primary w-5' : 'bg-white/20 hover:bg-white/40'}`}
                             />
                         ))}
@@ -1024,7 +1112,7 @@ function App() {
             </section>
 
             {/* How It Works */}
-            <section className="py-24 relative">
+            <section className="py-12 md:py-24 relative">
                 <div className="max-w-screen-xl mx-auto px-6">
                     <RevealSection className="text-center mb-16">
                         <span className="inline-block text-primary text-sm md:text-base font-medium tracking-wider uppercase mb-4">How it works</span>
@@ -1060,7 +1148,7 @@ function App() {
             </section>
 
             {/* Testimonials */}
-            <section id="reviews" className="py-24 relative">
+            <section id="reviews" className="py-12 md:py-24 relative">
                 <div className="absolute inset-0 -z-10">
                     <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full" />
                 </div>
@@ -1083,8 +1171,8 @@ function App() {
                         onMouseDown={handleTestimonialInteraction}
                         className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-6 -mx-6 px-6 scrollbar-hide scroll-smooth"
                     >
-                        {testimonials.map((t, i) => (
-                            <div key={i} className={`snap-center shrink-0 w-[85vw] md:w-[400px] transition-all duration-300 ${activeTestimonial === i ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-70'}`}>
+                        {[...testimonials, ...testimonials].map((t, i) => (
+                            <div key={i} className={`snap-center shrink-0 w-[85vw] md:w-[400px] transition-all duration-300 ${activeTestimonial === i % testimonials.length ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-70'}`}>
                                 <GlassCard className="p-8 h-full flex flex-col">
                                     <div className="flex items-center gap-1 mb-4">
                                         {[...Array(t.rating)].map((_, j) => (
@@ -1111,7 +1199,7 @@ function App() {
                         {testimonials.map((_, i) => (
                             <button
                                 key={i}
-                                onClick={() => { setActiveTestimonial(i); handleTestimonialInteraction(); }}
+                                onClick={() => { setActiveTestimonial(i); scrollContainerToIdx(testimonialContainerRef, i, false); handleTestimonialInteraction(); }}
                                 className={`w-2 h-2 rounded-full transition-all duration-300 ${activeTestimonial === i ? 'bg-primary w-6' : 'bg-white/20 hover:bg-white/40'}`}
                             />
                         ))}
@@ -1120,7 +1208,7 @@ function App() {
             </section>
 
             {/* CTA Section */}
-            <section className="py-24 relative">
+            <section className="py-12 md:py-24 relative">
                 <div className="max-w-screen-xl mx-auto px-6">
                     <RevealSection>
                         <div className="relative rounded-3xl overflow-hidden">
@@ -1167,22 +1255,25 @@ function App() {
             </section>
 
             {/* Enquiry / Contact */}
-            <section id="contact" className="py-24 relative">
+            <section id="contact" className="py-12 md:py-24 relative">
                 <div className="absolute inset-0 -z-10">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full" />
                 </div>
 
                 <div className="max-w-screen-xl mx-auto px-6">
+                    <RevealSection className="text-center mb-16">
+                        <span className="inline-block text-primary text-sm md:text-base font-medium tracking-wider uppercase mb-4">Contact</span>
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                            Let's build something{' '}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
+                                amazing together
+                            </span>
+                        </h2>
+                    </RevealSection>
+
                     <div className="grid lg:grid-cols-2 gap-16 items-start">
                         {/* Left info */}
                         <RevealSection>
-                            <span className="inline-block text-primary text-sm md:text-base font-medium tracking-wider uppercase mb-4">Contact</span>
-                            <h2 className="text-3xl md:text-5xl font-bold mb-6">
-                                Let's build something{' '}
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">
-                                    amazing together
-                                </span>
-                            </h2>
                             <p className="text-gray-400 text-lg mb-10 leading-relaxed">
                                 Interested in partnering or have questions? We'd love to hear from you. Fill out the form and our team will get back to you within 24 hours.
                             </p>
@@ -1222,17 +1313,18 @@ function App() {
 
             {/* Footer */}
             <footer className="border-t border-white/[0.06] bg-white/[0.01]">
-                <div className="max-w-screen-xl mx-auto px-6 py-16">
-                    <div className="grid md:grid-cols-4 gap-10 mb-12">
+                <div className="max-w-screen-xl mx-auto px-6 py-8 md:py-16">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 mb-8 md:mb-12">
                         {/* Brand */}
-                        <div className="md:col-span-2">
+                        <div className="col-span-2 md:col-span-2">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center">
                                     <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
                                 </div>
-                                <span className="text-xl font-bold tracking-tight">
+                                <img src="/HeyStyle_White.svg" alt="HeyStyle" className="h-[6rem]" />
+                                {/* <span className="text-xl font-bold tracking-tight">
                                     Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
-                                </span>
+                                </span> */}
                             </div>
                             <p className="text-gray-500 text-base max-w-sm leading-relaxed mb-6">
                                 Transforming how India books beauty and grooming services. No waiting, just styling.
@@ -1293,7 +1385,7 @@ function App() {
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.3 }}
                         onClick={scrollToTop}
-                        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-primary/90 hover:bg-primary text-white flex items-center justify-center shadow-[0_0_20px_rgba(142,110,232,0.3)] hover:shadow-[0_0_30px_rgba(142,110,232,0.5)] transition-all backdrop-blur-sm"
+                        className="fixed bottom-6 right-6 z-[9999] w-12 h-12 rounded-full bg-primary/90 hover:bg-primary text-white flex items-center justify-center shadow-[0_0_20px_rgba(142,110,232,0.3)] hover:shadow-[0_0_30px_rgba(142,110,232,0.5)] transition-all backdrop-blur-sm"
                         aria-label="Back to top"
                     >
                         <ArrowUp size={20} />
