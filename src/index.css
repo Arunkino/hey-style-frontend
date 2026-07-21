@@ -7,17 +7,6 @@
   color: #FFFFFF;
 }
 
-@media (pointer: coarse) {
-  .custom-cursor-dot,
-  .custom-cursor-ring {
-    display: none !important;
-  }
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
 body {
   font-family: 'Outfit', sans-serif;
   margin: 0;
@@ -40,30 +29,27 @@ body {
   background: rgba(142, 110, 232, 0.6);
 }
 
-/* Custom Cursor */
-.custom-cursor-dot {
-  position: fixed;
-  width: 5px;
-  height: 5px;
-  background: #ffffff;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  transform: translate(-50%, -50%);
-  will-change: transform;
+/* Keyboard focus — visible ring for keyboard users only, never on mouse click */
+:focus-visible {
+  outline: 2px solid rgba(142, 110, 232, 0.9);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-.custom-cursor-ring {
-  position: fixed;
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9998;
-  transform: translate(-50%, -50%);
-  will-change: transform;
-  transition: background 0.2s ease, border-color 0.2s ease;
+/* Skip link: first tab stop, hidden until focused */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 0.75rem 1.25rem;
+  background: #8e6ee8;
+  color: #000;
+  font-weight: 600;
+  border-radius: 0 0 0.5rem 0;
+}
+.skip-link:focus {
+  left: 0;
 }
 
 /* Glass Card */
@@ -180,4 +166,32 @@ body {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * Reduced motion.
+ * This site leans hard on motion (Lenis smooth-scroll, framer-motion, GSAP,
+ * looping bubbles). For visitors who ask the OS for less of it, the content
+ * must still arrive in its final state — so animations are collapsed to a
+ * single frame rather than removed, which would otherwise leave elements
+ * stuck at their `initial` opacity of 0.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .bubble,
+  .animate-gradient {
+    animation: none !important;
+  }
+
+  .tilt-card {
+    transform: none !important;
+  }
 }

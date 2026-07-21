@@ -68,7 +68,7 @@ const swingStyles = `
 `;
 
 export default function MascotSwing({
-  src = "/mascot_sitting_salon_chair.png",
+  src = "/mascot_sitting_salon_chair.webp",
   width = 400,
   alt = "Hey Style Mascot on chair",
 }) {
@@ -114,6 +114,10 @@ export default function MascotSwing({
             className="mascot-swing"
             src={src}
             alt={alt}
+            width={920}
+            height={920}
+            loading="lazy"
+            decoding="async"
             draggable={false}
             style={{ userSelect: "none", width: "100%", maxWidth: width, height: "auto", cursor: "pointer" }}
           />

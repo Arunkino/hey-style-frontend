@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 function MascotPlane() {
     const meshRef = useRef();
-    const texture = useTexture('/mascot_sitting_salon_chair.png');
+    const texture = useTexture('/mascot_sitting_salon_chair.webp');
 
     // Make background transparent
     texture.premultiplyAlpha = true;

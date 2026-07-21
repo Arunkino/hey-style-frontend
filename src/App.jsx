@@ -1,25 +1,28 @@
-import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useScroll, useTransform, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowRight, ArrowUp, Smartphone, Star, Clock, Calendar, CheckCircle, Loader2, Sparkles, Shield, Users, MapPin, ChevronDown, Play, Instagram, Twitter, Linkedin, Mail, Phone, Heart, Menu, X } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import CustomCursor from './components/CustomCursor';
 import MagneticButton from './components/MagneticButton';
 import AnimatedCounter from './components/AnimatedCounter';
 import TextReveal from './components/TextReveal';
-import ParallaxSection from './components/ParallaxSection';
 import MascotSwing from './components/MascotSwing';
-
-const FloatingMascot = React.lazy(() => import('./components/FloatingMascot'));
 
 gsap.registerPlugin(ScrollTrigger);
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1UTrUdEFVexDV6prtTEqo8N_c5B_HkvGXIuIiW8Bl4VrddHJC7lvmGKst0A-PU6Bz/exec";
 
+const prefersReducedMotion = () =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // Smooth Scroll Setup
 function useSmoothScroll() {
     useEffect(() => {
+        // Hijacking the scrollbar is exactly what this preference asks us not to do.
+        if (prefersReducedMotion()) return;
+
         let lenis;
         (async () => {
             const Lenis = (await import('lenis')).default;
@@ -139,25 +142,100 @@ function Marquee({ items, direction = 'left', speed = 30 }) {
     );
 }
 
+// Indian mobile: 10 digits starting 6-9. A leading +91 / 91 is stripped before checking.
+const PHONE_RE = /^[6-9]\d{9}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+
+const normalisePhone = (value) =>
+    value.replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
+
+function validateForm({ name, email, phone, message }) {
+    const errors = {};
+
+    if (!name.trim()) errors.name = 'Please enter your name.';
+
+    const digits = normalisePhone(phone);
+    if (!digits) errors.phone = 'Please enter your phone number.';
+    else if (!PHONE_RE.test(digits)) errors.phone = 'Enter a valid 10-digit mobile number.';
+
+    // Email is optional — only validated when the visitor actually fills it in.
+    if (email.trim() && !EMAIL_RE.test(email.trim())) errors.email = 'Enter a valid email address.';
+
+    if (!message.trim()) errors.message = 'Let us know how we can help.';
+
+    return errors;
+}
+
+// lucide-react dropped brand icons, so the WhatsApp glyph is inlined.
+function WhatsAppIcon({ className = '' }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" className={className}>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.174.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 0 1 6.988 2.896 9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885m8.413-18.297A11.82 11.82 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.9 11.9 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.82 11.82 0 0 0 20.464 3.49" />
+        </svg>
+    );
+}
+
+// Defined outside Form so React keeps the same element across renders — otherwise
+// the enter animation replays on every keystroke and the exit animation never runs.
+function FieldError({ name, errors }) {
+    return (
+        <AnimatePresence>
+            {errors[name] && (
+                <motion.p
+                    id={`${name}-error`}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="mt-2 text-sm text-red-400"
+                >
+                    {errors[name]}
+                </motion.p>
+            )}
+        </AnimatePresence>
+    );
+}
+
 // Form Component
 function Form() {
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
+    const [errors, setErrors] = useState({});
     const [status, setStatus] = useState('idle');
     const [focusedField, setFocusedField] = useState(null);
 
-    const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        // Clear the error as soon as they start correcting it, rather than nagging on every keystroke.
+        setErrors(prev => (prev[name] ? { ...prev, [name]: undefined } : prev));
+    };
+
+    const handleBlur = (e) => {
+        setFocusedField(null);
+        const { name } = e.target;
+        const fieldError = validateForm(formData)[name];
+        if (fieldError) setErrors(prev => ({ ...prev, [name]: fieldError }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const nextErrors = validateForm(formData);
+        if (Object.keys(nextErrors).length) {
+            setErrors(nextErrors);
+            document.querySelector(`[name="${Object.keys(nextErrors)[0]}"]`)?.focus();
+            return;
+        }
+
         setStatus('submitting');
         try {
             await fetch(SCRIPT_URL, {
                 method: "POST",
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, phone: normalisePhone(formData.phone) }),
                 mode: "no-cors"
             });
             setStatus('success');
             setFormData({ name: '', email: '', phone: '', message: '' });
+            setErrors({});
         } catch (error) {
             console.error("Error submitting form", error);
             setStatus('error');
@@ -193,44 +271,75 @@ function Form() {
         );
     }
 
-    const inputClass = (name) =>
-        `w-full p-4 bg-white/[0.03] border rounded-xl text-white outline-none transition-all duration-300 placeholder:text-zinc-600 ${focusedField === name ? 'border-primary/50 shadow-[0_0_20px_rgba(142,110,232,0.1)]' : 'border-white/[0.06] hover:border-white/10'}`;
+    const inputClass = (name) => {
+        const state = errors[name]
+            ? 'border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.08)]'
+            : focusedField === name
+                ? 'border-primary/50 shadow-[0_0_20px_rgba(142,110,232,0.1)]'
+                : 'border-white/[0.06] hover:border-white/10';
+        return `w-full p-4 bg-white/[0.03] border rounded-xl text-white outline-none transition-all duration-300 placeholder:text-zinc-600 ${state}`;
+    };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {[
-                { label: 'Your Name', name: 'name', type: 'text', placeholder: 'John Doe' },
-                { label: 'Email Address', name: 'email', type: 'email', placeholder: 'john@example.com' },
-                { label: 'Phone', name: 'phone', type: 'tel', placeholder: '+1 234 567 890' },
+                { label: 'Your Name', name: 'name', type: 'text', placeholder: 'Arjun Kumar', autoComplete: 'name', inputMode: 'text' },
+                // WhatsApp is a nudge, not a rule — any reachable number validates fine.
+                { label: 'Phone', name: 'phone', type: 'tel', placeholder: '98765 43210', autoComplete: 'tel', inputMode: 'numeric', whatsapp: true, hint: 'WhatsApp number preferred — it is how we usually reply' },
+                // Email stays optional in validateForm — just not advertised as such in the UI.
+                { label: 'Email Address', name: 'email', type: 'email', placeholder: 'arjun@example.com', autoComplete: 'email', inputMode: 'email' },
             ].map((field) => (
                 <div key={field.name}>
-                    <label className="block mb-2 text-sm font-medium text-gray-400">{field.label}</label>
-                    <input
-                        type={field.type}
-                        name={field.name}
-                        value={formData[field.name]}
-                        onChange={handleChange}
-                        onFocus={() => setFocusedField(field.name)}
-                        onBlur={() => setFocusedField(null)}
-                        required
-                        className={inputClass(field.name)}
-                        placeholder={field.placeholder}
-                    />
+                    <label htmlFor={field.name} className="block mb-2 text-sm font-medium text-gray-400">
+                        {field.label}
+                    </label>
+                    <div className="relative">
+                        <input
+                            id={field.name}
+                            type={field.type}
+                            name={field.name}
+                            value={formData[field.name]}
+                            onChange={handleChange}
+                            onFocus={() => setFocusedField(field.name)}
+                            onBlur={handleBlur}
+                            autoComplete={field.autoComplete}
+                            inputMode={field.inputMode}
+                            aria-invalid={!!errors[field.name]}
+                            aria-describedby={[
+                                field.hint ? `${field.name}-hint` : null,
+                                errors[field.name] ? `${field.name}-error` : null,
+                            ].filter(Boolean).join(' ') || undefined}
+                            className={`${inputClass(field.name)} ${field.whatsapp ? 'pr-12' : ''}`}
+                            placeholder={field.placeholder}
+                        />
+                        {field.whatsapp && (
+                            <WhatsAppIcon className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#25D366]" />
+                        )}
+                    </div>
+                    {field.hint && (
+                        <p id={`${field.name}-hint`} className="mt-2 text-xs text-zinc-500">
+                            {field.hint}
+                        </p>
+                    )}
+                    <FieldError name={field.name} errors={errors} />
                 </div>
             ))}
             <div>
-                <label className="block mb-2 text-sm font-medium text-gray-400">Message</label>
+                <label htmlFor="message" className="block mb-2 text-sm font-medium text-gray-400">Message</label>
                 <textarea
+                    id="message"
                     rows="4"
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
                     onFocus={() => setFocusedField('message')}
-                    onBlur={() => setFocusedField(null)}
-                    required
+                    onBlur={handleBlur}
+                    aria-invalid={!!errors.message}
+                    aria-describedby={errors.message ? 'message-error' : undefined}
                     className={inputClass('message')}
                     placeholder="How can we help?"
                 />
+                <FieldError name="message" errors={errors} />
             </div>
             <MagneticButton
                 type="submit"
@@ -465,7 +574,7 @@ function App() {
     const [mascotLoaded, setMascotLoaded] = useState(false);
     useEffect(() => {
         const img = new Image();
-        img.src = './mascot_sitting_salon_chair.png';
+        img.src = './mascot_sitting_salon_chair.webp';
         img.onload = () => setMascotLoaded(true);
     }, []);
 
@@ -622,6 +731,7 @@ function App() {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-primary/30 selection:text-white overflow-x-hidden">
+            <a href="#main" className="skip-link">Skip to content</a>
             <ScrollProgress />
 
             {/* Navbar */}
@@ -640,9 +750,9 @@ function App() {
                             whileHover={{ rotate: 10 }}
                             className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center"
                         >
-                            <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
+                            <img src="/icon_4.png" alt="" aria-hidden="true" width="32" height="32" decoding="async" className="w-full h-full object-contain scale-[3]" />
                         </motion.div>
-                        <img src="/HeyStyle_White.svg" alt="HeyStyle" className="h-[6rem]" />
+                        <img src="/HeyStyle_White.svg" alt="HeyStyle" width="97" height="96" decoding="async" className="h-[6rem] w-auto" />
                         {/* <span className="text-xl font-bold tracking-tight">
                             Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
                         </span> */}
@@ -715,7 +825,7 @@ function App() {
             </motion.nav>
 
             {/* Hero Section */}
-            <section ref={heroRef} onPointerMove={handleHeroPointerMove} onPointerLeave={handleHeroPointerLeave} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <section id="main" ref={heroRef} onPointerMove={handleHeroPointerMove} onPointerLeave={handleHeroPointerLeave} className="relative min-h-screen flex items-center justify-center overflow-hidden">
                 {/* Background effects */}
                 <div className="absolute inset-0 -z-10">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/15 blur-[150px] rounded-full" />
@@ -963,7 +1073,7 @@ function App() {
                             </div>
 
                             <div className="w-[85vw] max-w-[360px] sm:max-w-[400px] lg:max-w-[460px] mx-auto">
-                                <MascotSwing src="./mascot_sitting_salon_chair.png" width={460} />
+                                <MascotSwing src="./mascot_sitting_salon_chair.webp" width={460} />
                             </div>
 
                             {/* Floating badges */}
@@ -1224,7 +1334,7 @@ function App() {
                                     viewport={{ once: true }}
                                     className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center mx-auto mb-8 shadow-[0_0_60px_rgba(142,110,232,0.3)]"
                                 >
-                                    <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
+                                    <img src="/icon_4.png" alt="" aria-hidden="true" width="32" height="32" decoding="async" className="w-full h-full object-contain scale-[3]" />
                                 </motion.div>
 
                                 <h2 className="text-3xl md:text-5xl font-bold mb-4">Ready to skip the queue?</h2>
@@ -1319,9 +1429,9 @@ function App() {
                         <div className="col-span-2 md:col-span-2">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center">
-                                    <img src="/icon_4.png" alt="HeyStyle" className="w-full h-full object-contain scale-[3]" />
+                                    <img src="/icon_4.png" alt="" aria-hidden="true" width="32" height="32" decoding="async" className="w-full h-full object-contain scale-[3]" />
                                 </div>
-                                <img src="/HeyStyle_White.svg" alt="HeyStyle" className="h-[6rem]" />
+                                <img src="/HeyStyle_White.svg" alt="HeyStyle" width="97" height="96" decoding="async" className="h-[6rem] w-auto" />
                                 {/* <span className="text-xl font-bold tracking-tight">
                                     Hey<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Style</span>
                                 </span> */}
