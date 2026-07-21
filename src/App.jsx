@@ -142,6 +142,9 @@ function Marquee({ items, direction = 'left', speed = 30 }) {
     );
 }
 
+// Country code + number, digits only — the format wa.me expects.
+const WHATSAPP_NUMBER = '917994960606';
+
 // Indian mobile: 10 digits starting 6-9. A leading +91 / 91 is stripped before checking.
 const PHONE_RE = /^[6-9]\d{9}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
@@ -271,6 +274,16 @@ function Form() {
         );
     }
 
+    // Carries whatever they have already typed into the chat, so nothing is retyped.
+    // Phone is deliberately left out — WhatsApp already reveals the sender's number.
+    const whatsappHref = (() => {
+        const lines = ['Hi HeyStyle, I would like to make an enquiry.'];
+        if (formData.name.trim()) lines.push(`Name: ${formData.name.trim()}`);
+        if (formData.email.trim()) lines.push(`Email: ${formData.email.trim()}`);
+        if (formData.message.trim()) lines.push('', formData.message.trim());
+        return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
+    })();
+
     const inputClass = (name) => {
         const state = errors[name]
             ? 'border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.08)]'
@@ -358,6 +371,23 @@ function Form() {
                     </>
                 )}
             </MagneticButton>
+
+            <div className="flex items-center gap-4" aria-hidden="true">
+                <span className="flex-1 h-px bg-white/[0.08]" />
+                <span className="text-xs uppercase tracking-wider text-zinc-600">or</span>
+                <span className="flex-1 h-px bg-white/[0.08]" />
+            </div>
+
+            <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-[#25D366]/25 bg-[#25D366]/[0.07] px-5 py-4 text-base font-semibold text-[#25D366] transition-all duration-300 hover:bg-[#25D366]/[0.13] hover:border-[#25D366]/50 hover:shadow-[0_0_30px_rgba(37,211,102,0.12)]"
+            >
+                <WhatsAppIcon className="w-5 h-5" />
+                Chat on WhatsApp
+            </a>
+
             <AnimatePresence>
                 {status === 'error' && (
                     <motion.p
