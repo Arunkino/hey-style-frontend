@@ -11,6 +11,8 @@ export default defineConfig({
                 main: fileURLToPath(new URL('./index.html', import.meta.url)),
                 // Static legal page — built to dist/privacy-policy/index.html
                 privacy: fileURLToPath(new URL('./privacy-policy/index.html', import.meta.url)),
+                // Static legal page — built to dist/delete-account/index.html
+                deleteAccount: fileURLToPath(new URL('./delete-account/index.html', import.meta.url)),
             },
         },
     },
