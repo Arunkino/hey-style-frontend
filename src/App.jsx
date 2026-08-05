@@ -143,7 +143,7 @@ function Marquee({ items, direction = 'left', speed = 30 }) {
 }
 
 // Country code + number, digits only — the format wa.me expects.
-const WHATSAPP_NUMBER = '917994960606';
+const WHATSAPP_NUMBER = '917559933301';
 
 // Indian mobile: 10 digits starting 6-9. A leading +91 / 91 is stripped before checking.
 const PHONE_RE = /^[6-9]\d{9}$/;
@@ -1421,7 +1421,7 @@ function App() {
                             <div className="space-y-6">
                                 {[
                                     { icon: Mail, label: 'Email us', value: 'officialheystyle@gmail.com', href: 'mailto:officialheystyle@gmail.com' },
-                                    { icon: Phone, label: 'Call us', value: '+91 79949 60606', href: 'tel:+917994960606' },
+                                    { icon: Phone, label: 'Call us', value: '+91 75599 33301', href: 'tel:+917559933301' },
                                     { icon: MapPin, label: 'Location', value: 'Bengaluru, India', href: null },
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-start gap-4">
@@ -1473,7 +1473,7 @@ function App() {
                                 {[
                                     { Icon: Instagram, url: 'https://www.instagram.com/hey_style_india' },
                                     { Icon: Twitter, url: '#' },
-                                    { Icon: Linkedin, url: '#' },
+                                    { Icon: Linkedin, url: 'https://www.linkedin.com/company/heystyle' },
                                 ].map(({ Icon, url }, i) => (
                                     <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-gray-500 hover:text-primary hover:border-primary/30 transition-all">
                                         <Icon size={16} />
