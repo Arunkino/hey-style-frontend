@@ -13,6 +13,9 @@ export default defineConfig({
                 privacy: fileURLToPath(new URL('./privacy-policy/index.html', import.meta.url)),
                 // Static legal page — built to dist/delete-account/index.html
                 deleteAccount: fileURLToPath(new URL('./delete-account/index.html', import.meta.url)),
+                // QR code destination — built to dist/app/index.html. This URL is
+                // printed on physical material, so the path must never change.
+                app: fileURLToPath(new URL('./app/index.html', import.meta.url)),
             },
         },
     },
