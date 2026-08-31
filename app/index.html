@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/favicon/favicon.ico" type="image/x-icon" />
+  <link rel="shortcut icon" href="/favicon/favicon.ico" type="image/x-icon" />
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon/favicon-96x96.png" />
+  <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="/favicon/site.webmanifest" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Get the HeyStyle App</title>
+  <meta name="theme-color" content="#7C3AED" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="canonical" href="https://heystyle.in/app" />
+  <meta name="description"
+    content="Download the HeyStyle app and book salon appointments without the wait. Launching soon — leave your number and we'll tell you the moment it's live." />
+  <!-- Held out of search while this is a thin holding page. Switch to "index, follow"
+       (and add /app to public/sitemap.xml) once it becomes a real download page. -->
+  <meta name="robots" content="noindex, follow" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://heystyle.in/app" />
+  <meta property="og:site_name" content="HeyStyle" />
+  <meta property="og:title" content="Get the HeyStyle App" />
+  <meta property="og:description"
+    content="Book salon appointments without the wait. Launching soon — be the first to know." />
+  <meta property="og:image" content="https://heystyle.in/og-image.jpg" />
+  <meta property="og:locale" content="en_IN" />
+
+  <script>
+    // ---------------------------------------------------------------------
+    // STORE REDIRECT — this is the switch to flip at launch.
+    //
+    // Fill in a store URL below and this page stops rendering and forwards
+    // there instead. Leave a value empty and that platform keeps seeing the
+    // waitlist page, so Android can go live before iOS without a code change.
+    //
+    // Deliberately a client-side location.replace() rather than an HTTP 301:
+    // browsers cache permanent redirects more or less forever, so a 301 here
+    // would strand every phone that has already scanned the QR code if the
+    // destination ever needs to change.
+    // ---------------------------------------------------------------------
+    var STORE_LINKS = {
+      android: '', // e.g. 'https://play.google.com/store/apps/details?id=com.heystyle.customer'
+      ios: ''      // e.g. 'https://apps.apple.com/in/app/heystyle/id0000000000'
+    };
+
+    (function () {
+      var ua = navigator.userAgent || '';
+      // iPadOS 13+ reports itself as a Mac, so touch support disambiguates it.
+      var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+        (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+      var target = isIOS ? STORE_LINKS.ios : (/Android/.test(ua) ? STORE_LINKS.android : '');
+
+      if (!target) return; // Desktop, or that store isn't live yet — show the page.
+
+      // Carry the QR's ?s= tag through to Play Store install referrer tracking.
+      var source = new URLSearchParams(location.search).get('s');
+      if (source && target.indexOf('play.google.com') !== -1) {
+        target += '&referrer=' + encodeURIComponent('utm_source=' + source);
+      }
+      location.replace(target);
+    })();
+  </script>
+
+  <style>
+    :root {
+      --primary: #8E6EE8;
+      --bg: #000000;
+      --text: #FFFFFF;
+      --muted: #9CA3AF;
+      --dim: #6B7280;
+      --line: rgba(255, 255, 255, 0.08);
+      --error: #F87171;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+      font-weight: 300;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* A soft glow behind the fold, so the black page doesn't read as an error page. */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20vh;
+      left: 50%;
+      width: min(120vw, 700px);
+      height: min(120vw, 700px);
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(142, 110, 232, 0.16), transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    :focus-visible {
+      outline: 2px solid rgba(142, 110, 232, 0.9);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .wordmark {
+      height: 64px;
+      width: auto;
+      margin-bottom: 1.75rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--primary);
+      border: 1px solid rgba(142, 110, 232, 0.3);
+      background: rgba(142, 110, 232, 0.08);
+      border-radius: 999px;
+      padding: 0.35rem 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .pulse {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.25;
+      }
+    }
+
+    h1 {
+      font-size: clamp(2rem, 9vw, 2.75rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin: 0 0 1rem;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--primary);
+    }
+
+    .lede {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin: 0 0 2.25rem;
+      max-width: 22rem;
+    }
+
+    form {
+      width: 100%;
+      text-align: left;
+    }
+
+    .field+.field {
+      margin-top: 0.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--dim);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.9rem 1.1rem;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--line);
+      border-radius: 0.85rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    input::placeholder {
+      color: #4B5563;
+    }
+
+    input:focus {
+      border-color: rgba(142, 110, 232, 0.6);
+      background: rgba(255, 255, 255, 0.05);
+      outline: none;
+    }
+
+    input[aria-invalid="true"] {
+      border-color: rgba(248, 113, 113, 0.6);
+    }
+
+    .error {
+      display: block;
+      min-height: 1.2rem;
+      font-size: 0.8rem;
+      color: var(--error);
+      margin-top: 0.35rem;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.95rem 1.5rem;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #0B0713;
+      background: var(--primary);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    button:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .fine-print {
+      font-size: 0.8rem;
+      color: var(--dim);
+      text-align: center;
+      margin: 1rem 0 0;
+    }
+
+    /* Success state — swapped in place of the form once the number is in. */
+    .success {
+      display: none;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--line);
+      border-radius: 1.25rem;
+      padding: 2rem 1.5rem;
+    }
+
+    .success .tick {
+      width: 3.5rem;
+      height: 3.5rem;
+      margin: 0 auto 1.25rem;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .success .tick svg {
+      width: 1.75rem;
+      height: 1.75rem;
+      stroke: #4ADE80;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .success h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+    }
+
+    .success p {
+      color: var(--muted);
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    body.is-done form {
+      display: none;
+    }
+
+    body.is-done .success {
+      display: block;
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-inner {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      align-items: center;
+      justify-content: center;
+      color: var(--dim);
+      font-size: 0.85rem;
+    }
+
+    .footer-inner a {
+      color: var(--dim);
+    }
+
+    .footer-inner a:hover {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <a href="/" aria-label="HeyStyle home">
+      <img class="wordmark" src="/HeyStyle_White.svg" alt="HeyStyle" width="97" height="96" />
+    </a>
+
+    <span class="eyebrow"><span class="pulse" aria-hidden="true"></span> Launching soon</span>
+
+    <h1>Book salons <em>without the wait</em></h1>
+    <p class="lede">
+      The HeyStyle app is almost ready. Drop your number and we'll message you the moment it's live.
+    </p>
+
+    <form id="notify-form" novalidate>
+      <div class="field">
+        <label for="phone">Mobile number</label>
+        <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10-digit number"
+          aria-describedby="phone-error" required />
+        <span class="error" id="phone-error" role="alert"></span>
+      </div>
+      <div class="field">
+        <label for="name">Name <span style="color:#4B5563">(optional)</span></label>
+        <input id="name" name="name" type="text" autocomplete="name" placeholder="Your name" />
+      </div>
+      <button type="submit" id="submit-btn">Notify me at launch</button>
+      <p class="fine-print">One message when we launch. No spam, ever.</p>
+    </form>
+
+    <div class="success" role="status">
+      <div class="tick" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <h2>You're on the list</h2>
+      <p>We'll message you as soon as the HeyStyle app goes live.</p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <a href="/">heystyle.in</a>
+      <a href="/privacy-policy">Privacy Policy</a>
+      <span>&copy; <span id="year">2026</span> HeyStyle</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Same endpoint and payload shape as the contact form on the main site, so
+    // waitlist signups land as rows in the existing Google Sheet.
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1UTrUdEFVexDV6prtTEqo8N_c5B_HkvGXIuIiW8Bl4VrddHJC7lvmGKst0A-PU6Bz/exec";
+    var PHONE_RE = /^[6-9]\d{9}$/;
+
+    // ?s= tags which QR code the scan came from — /app?s=counter-card,
+    // /app?s=poster-a — so the sheet shows what's actually pulling people in.
+    var source = new URLSearchParams(location.search).get('s') || 'direct';
+
+    var form = document.getElementById('notify-form');
+    var phoneInput = document.getElementById('phone');
+    var phoneError = document.getElementById('phone-error');
+    var submitBtn = document.getElementById('submit-btn');
+
+    var normalisePhone = function (value) {
+      return value.replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
+    };
+
+    var setError = function (message) {
+      phoneError.textContent = message;
+      phoneInput.setAttribute('aria-invalid', message ? 'true' : 'false');
+    };
+
+    // Clear the error as they start correcting it, rather than nagging on every keystroke.
+    phoneInput.addEventListener('input', function () {
+      if (phoneError.textContent) setError('');
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var digits = normalisePhone(phoneInput.value);
+      if (!digits || !PHONE_RE.test(digits)) {
+        setError(digits ? 'Enter a valid 10-digit mobile number.' : 'Please enter your phone number.');
+        phoneInput.focus();
+        return;
+      }
+
+      setError('');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Adding you…';
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: document.getElementById('name').value.trim(),
+          email: '',
+          phone: digits,
+          message: 'App launch waitlist (source: ' + source + ')'
+        }),
+        mode: 'no-cors'
+      }).then(function () {
+        document.body.classList.add('is-done');
+      }).catch(function (error) {
+        console.error('Error submitting form', error);
+        setError('Something went wrong. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Notify me at launch';
+      });
+    });
+  </script>
+</body>
+
+</html>
