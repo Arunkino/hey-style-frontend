@@ -10,25 +10,25 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png?v=2" />
   <link rel="manifest" href="/favicon/site.webmanifest" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Get the HeyStyle App</title>
+  <title>Get HeyStyle for Business</title>
   <meta name="theme-color" content="#7C3AED" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="canonical" href="https://heystyle.in/app" />
+  <link rel="canonical" href="https://heystyle.in/partner" />
   <meta name="description"
-    content="Download the HeyStyle app and book salon appointments without the wait. Launching soon — leave your number and we'll tell you the moment it's live." />
+    content="HeyStyle for Business — take bookings, manage staff and fill empty chairs. Launching soon for salon partners. Leave your number and we'll tell you the moment it's live." />
   <!-- Held out of search while this is a thin holding page. Switch to "index, follow"
        (and add /app to public/sitemap.xml) once it becomes a real download page. -->
   <meta name="robots" content="noindex, follow" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://heystyle.in/app" />
+  <meta property="og:url" content="https://heystyle.in/partner" />
   <meta property="og:site_name" content="HeyStyle" />
-  <meta property="og:title" content="Get the HeyStyle App" />
+  <meta property="og:title" content="Get HeyStyle for Business" />
   <meta property="og:description"
-    content="Book salon appointments without the wait. Launching soon — be the first to know." />
+    content="Take bookings, manage staff and fill empty chairs. Launching soon for salon partners." />
   <meta property="og:image" content="https://heystyle.in/og-image.jpg" />
   <meta property="og:locale" content="en_IN" />
 
@@ -46,7 +46,7 @@
     // destination ever needs to change.
     // ---------------------------------------------------------------------
     var STORE_LINKS = {
-      android: '', // the customer app — not com.heystyle.app, that is the partner app
+      android: '', // the partner app: 'https://play.google.com/store/apps/details?id=com.heystyle.app'
       ios: ''      // e.g. 'https://apps.apple.com/in/app/heystyle/id0000000000'
     };
 
@@ -409,9 +409,10 @@
 
     <span class="eyebrow"><span class="pulse" aria-hidden="true"></span> Launching soon</span>
 
-    <h1>Book salons <em>without the wait</em></h1>
+    <h1>Fill every <em>empty chair</em></h1>
     <p class="lede">
-      The HeyStyle app is almost ready. Drop your number and we'll message you the moment it's live.
+      HeyStyle for Business is almost ready — take bookings, manage your staff and stop losing
+      walk-ins to the phone. Drop your number and we'll message you the moment it's live.
     </p>
 
     <form id="notify-form" novalidate>
@@ -422,13 +423,13 @@
         <span class="error" id="phone-error" role="alert"></span>
       </div>
       <div class="field">
-        <label for="name">Name <span style="color:#4B5563">(optional)</span></label>
-        <input id="name" name="name" type="text" autocomplete="name" placeholder="Your name" />
+        <label for="name">Salon name <span style="color:#4B5563">(optional)</span></label>
+        <input id="name" name="name" type="text" autocomplete="organization" placeholder="Your salon's name" />
       </div>
       <button type="submit" id="submit-btn">Notify me at launch</button>
       <p class="fine-print">
         By sharing your number you agree that HeyStyle may contact you by call, SMS or WhatsApp about
-        the launch of the HeyStyle app. We will not use it for anything else, and you can ask us
+        the launch of HeyStyle for Business. We will not use it for anything else, and you can ask us
         to remove it at any time by mailing
         <a href="mailto:officialheystyle@gmail.com">officialheystyle@gmail.com</a>.
         See our <a href="/privacy-policy">Privacy Policy</a>.
@@ -442,10 +443,10 @@
         </svg>
       </div>
       <h2>You're on the list</h2>
-      <p>We'll message you as soon as the HeyStyle app goes live.</p>
+      <p>We'll message you as soon as HeyStyle for Business goes live.</p>
     </div>
 
-    <p class="switch">Run a salon? <a href="/partner">Get HeyStyle for Business &rarr;</a></p>
+    <p class="switch">Looking to book an appointment? <a href="/app">Get the HeyStyle app &rarr;</a></p>
   </main>
 
   <footer>
@@ -464,8 +465,8 @@
     var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1UTrUdEFVexDV6prtTEqo8N_c5B_HkvGXIuIiW8Bl4VrddHJC7lvmGKst0A-PU6Bz/exec";
     var PHONE_RE = /^[6-9]\d{9}$/;
 
-    // ?s= tags which QR code the scan came from — /app?s=counter-card,
-    // /app?s=poster-a — so the sheet shows what's actually pulling people in.
+    // ?s= tags which QR code the scan came from — /partner?s=salon-visit,
+    // /partner?s=flyer — so the sheet shows what's actually pulling people in.
     var source = new URLSearchParams(location.search).get('s') || 'direct';
 
     var form = document.getElementById('notify-form');
@@ -514,7 +515,7 @@
           name: document.getElementById('name').value.trim(),
           email: '',
           phone: digits,
-          message: 'Customer app launch waitlist (source: ' + source + ')'
+          message: 'Partner app launch waitlist (source: ' + source + ')'
         }),
         mode: 'no-cors'
       }).then(function () {
